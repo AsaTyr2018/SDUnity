@@ -106,52 +106,102 @@ def get_pipeline(model_name):
     return PIPELINES[model_name]
 
 
-def generate_image(prompt, negative_prompt, seed, steps, width, height, model, lora):
-    """Generate an image using the selected diffusion model."""
+def generate_image(
+    prompt,
+    negative_prompt,
+    seed,
+    steps,
+    width,
+    height,
+    model,
+    lora,
+    nsfw_filter,
+    images_per_batch,
+    batch_count,
+):
+    """Generate one or more images using the selected diffusion model."""
     if seed is None:
         seed = random.randint(0, 2**32 - 1)
 
     pipe = get_pipeline(model)
+
+    # Toggle safety checker based on nsfw_filter flag
+    if not hasattr(pipe, "_original_safety_checker"):
+        pipe._original_safety_checker = getattr(pipe, "safety_checker", None)
+    pipe.safety_checker = pipe._original_safety_checker if nsfw_filter else None
+
     generator = torch.Generator(device=pipe.device).manual_seed(int(seed))
 
-    result = pipe(
-        prompt,
-        negative_prompt=negative_prompt,
-        width=int(width),
-        height=int(height),
-        num_inference_steps=int(steps),
-        generator=generator,
-    )
-    img = result.images[0]
-    gallery_images.append(img)
-    return img, seed, gallery_images
+    images = []
+    for _ in range(int(batch_count)):
+        result = pipe(
+            prompt,
+            negative_prompt=negative_prompt,
+            width=int(width),
+            height=int(height),
+            num_inference_steps=int(steps),
+            generator=generator,
+            num_images_per_prompt=int(images_per_batch),
+        )
+        images.extend(result.images)
+
+    if images:
+        gallery_images.extend(images)
+        last_img = images[-1]
+    else:
+        last_img = None
+
+    return last_img, seed, gallery_images
 
 with gr.Blocks() as demo:
     gr.Markdown("# SDUnity - Prototype")
 
     with gr.Row():
-        prompt = gr.Textbox(label="Prompt")
-        negative_prompt = gr.Textbox(label="Negative Prompt")
+        with gr.Column(scale=3):
+            prompt = gr.Textbox(label="Prompt")
+            negative_prompt = gr.Textbox(label="Negative Prompt")
 
-    with gr.Row():
-        seed = gr.Number(label="Seed", value=None, precision=0)
-        steps = gr.Slider(1, 50, value=20, label="Steps")
-        width = gr.Slider(64, 1024, value=256, step=64, label="Width")
-        height = gr.Slider(64, 1024, value=256, step=64, label="Height")
+            with gr.Row():
+                seed = gr.Number(label="Seed", value=None, precision=0)
+                steps = gr.Slider(1, 50, value=20, label="Steps")
+                width = gr.Slider(64, 1024, value=256, step=64, label="Width")
+                height = gr.Slider(64, 1024, value=256, step=64, label="Height")
 
-    with gr.Row():
-        model = gr.Dropdown(choices=list_models(), value="sd15", label="Model")
-        lora = gr.Dropdown(choices=list_loras(), label="LoRA", multiselect=True)
-        refresh = gr.Button("Refresh")
+            with gr.Row():
+                model = gr.Dropdown(choices=list_models(), value="sd15", label="Model")
+                lora = gr.Dropdown(choices=list_loras(), label="LoRA", multiselect=True)
+                refresh = gr.Button("Refresh")
 
-    generate_btn = gr.Button("Generate")
+            generate_btn = gr.Button("Generate")
+
+        with gr.Column(scale=1):
+            with gr.Box():
+                gr.Markdown("### Additional Settings")
+                nsfw_filter = gr.Checkbox(label="NSFW Filter", value=True)
+                images_per_batch = gr.Number(
+                    label="Images per Batch", value=1, precision=0
+                )
+                batch_count = gr.Number(label="Batch Count", value=1, precision=0)
+
     with gr.Row():
         output = gr.Image(label="Result")
         gallery = gr.Gallery(label="Gallery")
 
     generate_btn.click(
         generate_image,
-        inputs=[prompt, negative_prompt, seed, steps, width, height, model, lora],
+        inputs=[
+            prompt,
+            negative_prompt,
+            seed,
+            steps,
+            width,
+            height,
+            model,
+            lora,
+            nsfw_filter,
+            images_per_batch,
+            batch_count,
+        ],
         outputs=[output, seed, gallery],
     )
     refresh.click(refresh_lists, outputs=[model, lora])
