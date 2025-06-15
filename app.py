@@ -6,7 +6,11 @@ import gradio as gr
 from PIL import Image
 import numpy as np
 import torch
-from diffusers import DiffusionPipeline, StableDiffusionPipeline
+from diffusers import (
+    DiffusionPipeline,
+    StableDiffusionPipeline,
+    StableDiffusionXLPipeline,
+)
 
 PRESETS_FILE = "presets.txt"
 
@@ -130,7 +134,7 @@ def get_pipeline(model_name):
 
         if "xl" in model_name.lower() or "xl" in repo.lower():
             try:
-                pipe = DiffusionPipeline.from_single_file(
+                pipe = StableDiffusionXLPipeline.from_single_file(
                     repo, torch_dtype=torch.float16, variant="fp16"
                 )
             except ImportError as e:
