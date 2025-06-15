@@ -10,11 +10,26 @@ from diffusers import DiffusionPipeline, StableDiffusionPipeline
 MODELS_DIR = "models"
 LORA_DIR = "loras"
 
-# Predefined huggingface models
+# Predefined HuggingFace models
 PREDEFINED_MODELS = {
+    # SD 1.5 models
     "sd15": "runwayml/stable-diffusion-v1-5",
+    "realistic_vision_v6": "SG161222/Realistic_Vision_V6",
+    "deliberate": "XpucT/Deliberate",
+    "fluently_v4": "fluently/Fluently-v4",
+
+    # SDXL models
     "sdxl": "stabilityai/stable-diffusion-xl-base-1.0",
+    "fluently_xl_final": "fluently/Fluently-Xl-Final",
+    "realvisxl_v4": "SG161222/RealVisXL_V4.0",
+    "visionix_alpha": "ehristoforu/Visionix-alpha",
+    "halcyon_1_7": "Halcyon 1.7",
+    "sdxl_lightning": "SDXL-Lightning",
+
+    # PonyXL models
     "ponyxl": "glides/ponyxl",
+    "pony_diffusion_v6_xl": "LyliaEngine/Pony Diffusion V6 XL",
+    "ponyxl_realistic_v3": "John6666/damn-ponyxl-realistic-v3-sdxl",
 }
 
 # Cache for loaded pipelines
@@ -22,8 +37,14 @@ PIPELINES = {}
 
 
 def list_models():
-    """Return available model names."""
-    return list(PREDEFINED_MODELS.keys())
+    """Return available model names, including local models in MODELS_DIR."""
+    names = list(PREDEFINED_MODELS.keys())
+    if os.path.isdir(MODELS_DIR):
+        for fname in os.listdir(MODELS_DIR):
+            path = os.path.join(MODELS_DIR, fname)
+            if os.path.isdir(path) or fname.lower().endswith((".ckpt", ".safetensors", ".bin")):
+                names.append(fname)
+    return names
 
 
 def list_loras():
@@ -44,12 +65,21 @@ def get_pipeline(model_name):
     if model_name not in PIPELINES:
         repo = PREDEFINED_MODELS.get(model_name)
         if repo is None:
-            raise ValueError(f"Unknown model: {model_name}")
-        if model_name == "sdxl":
+            local_path = os.path.join(MODELS_DIR, model_name)
+            if not os.path.exists(local_path):
+                raise ValueError(f"Unknown model: {model_name}")
+            repo = local_path
+
+        if "xl" in model_name.lower() or "xl" in repo.lower():
             try:
-                pipe = DiffusionPipeline.from_pretrained(
-                    repo, torch_dtype=torch.float16, variant="fp16"
-                )
+                if os.path.isfile(repo):
+                    pipe = DiffusionPipeline.from_single_file(
+                        repo, torch_dtype=torch.float16, variant="fp16"
+                    )
+                else:
+                    pipe = DiffusionPipeline.from_pretrained(
+                        repo, torch_dtype=torch.float16, variant="fp16"
+                    )
             except ImportError as e:
                 raise RuntimeError(
                     "StableDiffusionXLPipeline requires the 'transformers' library. "
@@ -57,9 +87,14 @@ def get_pipeline(model_name):
                 ) from e
         else:
             try:
-                pipe = StableDiffusionPipeline.from_pretrained(
-                    repo, torch_dtype=torch.float16
-                )
+                if os.path.isfile(repo):
+                    pipe = StableDiffusionPipeline.from_single_file(
+                        repo, torch_dtype=torch.float16
+                    )
+                else:
+                    pipe = StableDiffusionPipeline.from_pretrained(
+                        repo, torch_dtype=torch.float16
+                    )
             except ImportError as e:
                 raise RuntimeError(
                     "StableDiffusionPipeline requires the 'transformers' library. "
