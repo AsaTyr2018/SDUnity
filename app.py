@@ -21,6 +21,11 @@ def list_loras():
     return [f for f in os.listdir(LORA_DIR) if f.lower().endswith(".safetensors")]
 
 
+def refresh_lists():
+    """Return updated choices for model and LoRA dropdowns."""
+    return gr.update(choices=list_models()), gr.update(choices=list_loras())
+
+
 gallery_images = []
 
 
@@ -50,6 +55,7 @@ with gr.Blocks() as demo:
     with gr.Row():
         model = gr.Dropdown(choices=list_models(), label="Model")
         lora = gr.Dropdown(choices=list_loras(), label="LoRA", multiselect=True)
+        refresh = gr.Button("Refresh")
 
     generate_btn = gr.Button("Generate")
     with gr.Row():
@@ -61,6 +67,7 @@ with gr.Blocks() as demo:
         inputs=[prompt, negative_prompt, seed, steps, width, height, model, lora],
         outputs=[output, seed, gallery],
     )
+    refresh.click(refresh_lists, outputs=[model, lora])
 
 if __name__ == "__main__":
-    demo.launch(share=True)
+    demo.launch(server_name="0.0.0.0", share=False)
