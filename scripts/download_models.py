@@ -14,6 +14,16 @@ def load_registry(path=REGISTRY_PATH):
         return json.load(f)
 
 
+def download_file(url, dest):
+    """Download a file from url to dest with basic error handling."""
+    try:
+        request.urlretrieve(url, dest)
+    except Exception as e:
+        if os.path.exists(dest):
+            os.remove(dest)
+        raise RuntimeError(f"Failed to download {url}: {e}") from e
+
+
 def download_all():
     registry = load_registry()
     for category, models in registry.items():
@@ -25,14 +35,14 @@ def download_all():
                 continue
             filename = os.path.basename(url)
             dest = os.path.join(cat_dir, filename)
-            if os.path.exists(dest):
+            if os.path.isfile(dest) and os.path.getsize(dest) > 0:
                 print(f"{filename} already exists, skipping")
                 continue
             print(f"Downloading {filename} to {dest}")
             try:
-                request.urlretrieve(url, dest)
+                download_file(url, dest)
             except Exception as e:
-                print(f"Failed to download {url}: {e}")
+                print(e)
 
 
 if __name__ == "__main__":

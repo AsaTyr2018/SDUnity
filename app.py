@@ -1,6 +1,7 @@
 import os
 import random
 import json
+from urllib import request
 
 import gradio as gr
 from PIL import Image
@@ -63,6 +64,45 @@ def build_model_lookup():
 
 MODEL_LOOKUP = build_model_lookup()
 
+# ------------------------------------------------------------
+# Utility functions
+# ------------------------------------------------------------
+
+def _find_model_info(model_name):
+    """Return (category, info) tuple for the given filename from the registry."""
+    for category, models in MODEL_REGISTRY.items():
+        for _name, info in models.items():
+            if os.path.basename(info.get("url", "")) == model_name:
+                return category, info
+    return None, None
+
+
+def download_model_file(model_name):
+    """Download the model file defined in the registry if missing."""
+    category, info = _find_model_info(model_name)
+    if not info:
+        raise ValueError(f"Unknown model: {model_name}")
+
+    url = info.get("url")
+    if not url:
+        raise ValueError(f"No download URL for model: {model_name}")
+
+    dest_dir = os.path.join(MODELS_DIR, category)
+    os.makedirs(dest_dir, exist_ok=True)
+    dest = os.path.join(dest_dir, os.path.basename(url))
+
+    if os.path.isfile(dest) and os.path.getsize(dest) > 0:
+        return dest
+
+    print(f"Downloading {model_name} from {url}")
+    try:
+        request.urlretrieve(url, dest)
+    except Exception as e:
+        if os.path.exists(dest):
+            os.remove(dest)
+        raise RuntimeError(f"Failed to download {url}: {e}") from e
+
+    return dest
 # Cache for loaded pipelines
 PIPELINES = {}
 
@@ -129,8 +169,14 @@ def get_pipeline(model_name):
     """Load and cache the diffusion pipeline for the given model."""
     if model_name not in PIPELINES:
         repo = MODEL_LOOKUP.get(model_name)
-        if repo is None:
-            raise ValueError(f"Unknown model: {model_name}")
+        if not repo or not os.path.isfile(repo):
+            # Attempt to download the model file if it doesn't exist
+            try:
+                repo = download_model_file(model_name)
+                # rebuild lookup so subsequent calls see the new path
+                MODEL_LOOKUP[model_name] = repo
+            except Exception as e:
+                raise ValueError(f"Unknown model: {model_name}") from e
 
         if "xl" in model_name.lower() or "xl" in repo.lower():
             try:
