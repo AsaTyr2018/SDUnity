@@ -17,4 +17,4 @@ with gr.Blocks() as demo:
     generate_btn.click(generate_image, inputs=[prompt, negative_prompt], outputs=output)
 
 if __name__ == "__main__":
-    demo.launch()
+    demo.launch(share=True)
