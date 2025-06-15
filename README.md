@@ -24,13 +24,6 @@ SDUnity is a self-hosted web interface built with [Gradio](https://www.gradio.ap
 - Shows prompt, model, LoRA and timestamp
 - Filter and sort by model, LoRA, date and tags
 
-### Roadmap Ideas
-- Image2Image and inpainting/outpainting
-- User system and usage tracking
-- API access and dynamic LoRA blending
-- FiftyOne-based deduplication pipeline integration
-- Animated LoRA previews and community gallery mode
-
 ## Built-in Models
 
 SDUnity includes presets for several popular models. Additional `.safetensors` or `.ckpt` files placed in `models/` are automatically detected.
