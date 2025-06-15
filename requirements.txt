@@ -1,6 +1,3 @@
-# SDUnity – initial requirements.txt
-# ────────────────────────────────
-# Core UI
 gradio==5.34.0
 pillow
 numpy
