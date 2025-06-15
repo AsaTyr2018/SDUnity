@@ -7,6 +7,25 @@ import numpy as np
 import torch
 from diffusers import DiffusionPipeline, StableDiffusionPipeline
 
+PRESETS_FILE = "presets.txt"
+
+
+def load_presets(filepath=PRESETS_FILE):
+    """Load prompt enhancement presets from a pipe-separated file."""
+    presets = {}
+    if os.path.isfile(filepath):
+        with open(filepath, "r", encoding="utf-8") as f:
+            lines = [line.strip() for line in f if line.strip()]
+        for line in lines[1:]:
+            parts = [p.strip() for p in line.split("|")]
+            if len(parts) >= 3:
+                display = f"{parts[0]} | {parts[1]}"
+                presets[display] = parts[2]
+    return presets
+
+
+PRESETS = load_presets()
+
 MODELS_DIR = "models"
 LORA_DIR = "loras"
 
@@ -118,10 +137,16 @@ def generate_image(
     nsfw_filter,
     images_per_batch,
     batch_count,
+    preset,
 ):
     """Generate one or more images using the selected diffusion model."""
     if seed is None:
         seed = random.randint(0, 2**32 - 1)
+
+    if preset:
+        enhancement = PRESETS.get(preset)
+        if enhancement:
+            prompt = f"{prompt}, {enhancement}"
 
     pipe = get_pipeline(model)
 
@@ -183,7 +208,15 @@ with gr.Blocks() as demo:
                 images_per_batch = gr.Number(
                     label="Images per Batch", value=1, precision=0
                 )
-                batch_count = gr.Number(label="Batch Count", value=1, precision=0)
+            batch_count = gr.Number(label="Batch Count", value=1, precision=0)
+
+        with gr.Group():
+            gr.Markdown("### Presets")
+            preset = gr.Dropdown(
+                choices=list(PRESETS.keys()),
+                label="Preset",
+                value=None,
+            )
 
     with gr.Row():
         output = gr.Image(label="Result")
@@ -203,6 +236,7 @@ with gr.Blocks() as demo:
             nsfw_filter,
             images_per_batch,
             batch_count,
+            preset,
         ],
         outputs=[output, seed, gallery],
     )
