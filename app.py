@@ -3,6 +3,7 @@ import random
 import json
 from urllib import request
 import requests
+import inspect
 
 import gradio as gr
 from PIL import Image
@@ -257,32 +258,53 @@ def generate_image(
     images = []
     preview_frames = [] if smooth_preview else None
 
-    def save_preview(step, t, latents):
-        if preview_frames is None:
-            return
+    def _decode_preview_latents(latents):
+        if hasattr(pipe, "image_processor") and hasattr(pipe.image_processor, "postprocess"):
+            return pipe.image_processor.postprocess(latents, output_type="pil")
+        if hasattr(pipe, "vae_image_processor") and hasattr(pipe.vae_image_processor, "postprocess"):
+            return pipe.vae_image_processor.postprocess(latents, output_type="pil")
         if hasattr(pipe, "decode_latents"):
             imgs = pipe.decode_latents(latents)
-            imgs = pipe.numpy_to_pil(imgs)
-        else:
-            lat = latents / 0.18215
-            imgs = pipe.vae.decode(lat).sample
-            imgs = (imgs / 2 + 0.5).clamp(0, 1)
-            imgs = imgs.detach().cpu().permute(0, 2, 3, 1).numpy()
-            imgs = [Image.fromarray((img * 255).astype("uint8")) for img in imgs]
+            return pipe.numpy_to_pil(imgs)
+        lat = latents / 0.18215
+        imgs = pipe.vae.decode(lat).sample
+        imgs = (imgs / 2 + 0.5).clamp(0, 1)
+        imgs = imgs.detach().cpu().permute(0, 2, 3, 1).numpy()
+        return [Image.fromarray((img * 255).astype("uint8")) for img in imgs]
+
+    def _save_preview_old(step, t, latents):
+        if preview_frames is None:
+            return
+        imgs = _decode_preview_latents(latents)
         preview_frames.append(imgs[0])
 
+    def _save_preview_new(_pipe, step, t, kwargs):
+        latents = kwargs.get("latents")
+        if latents is not None:
+            _save_preview_old(step, t, latents)
+        return {}
+
     for _ in range(int(batch_count)):
-        result = pipe(
-            prompt,
+        call_kwargs = dict(
+            prompt=prompt,
             negative_prompt=negative_prompt,
             width=int(width),
             height=int(height),
             num_inference_steps=int(steps),
             generator=generator,
             num_images_per_prompt=int(images_per_batch),
-            callback=save_preview if smooth_preview else None,
-            callback_steps=1 if smooth_preview else None,
         )
+
+        if smooth_preview:
+            sig = inspect.signature(pipe.__call__)
+            if "callback_on_step_end" in sig.parameters:
+                call_kwargs["callback_on_step_end"] = _save_preview_new
+                call_kwargs["callback_on_step_end_tensor_inputs"] = ["latents"]
+            else:
+                call_kwargs["callback"] = _save_preview_old
+                call_kwargs["callback_steps"] = 1
+
+        result = pipe(**call_kwargs)
         images.extend(result.images)
 
     if images:
