@@ -175,7 +175,9 @@ with gr.Blocks() as demo:
             generate_btn = gr.Button("Generate")
 
         with gr.Column(scale=1):
-            with gr.Box():
+            # Box was removed in newer versions of Gradio; Group provides a
+            # simple container without padding/margin.
+            with gr.Group():
                 gr.Markdown("### Additional Settings")
                 nsfw_filter = gr.Checkbox(label="NSFW Filter", value=True)
                 images_per_batch = gr.Number(
