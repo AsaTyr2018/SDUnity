@@ -2,6 +2,7 @@ import os
 import random
 import json
 from urllib import request
+import requests
 
 import gradio as gr
 from PIL import Image
@@ -77,7 +78,7 @@ def _find_model_info(model_name):
     return None, None
 
 
-def download_model_file(model_name):
+def download_model_file(model_name, progress=None):
     """Download the model file defined in the registry if missing."""
     category, info = _find_model_info(model_name)
     if not info:
@@ -96,7 +97,22 @@ def download_model_file(model_name):
 
     print(f"Downloading {model_name} from {url}")
     try:
-        request.urlretrieve(url, dest)
+        resp = requests.get(url, stream=True)
+        resp.raise_for_status()
+        total = int(resp.headers.get("content-length", 0))
+        downloaded = 0
+        if progress:
+            progress(0, desc=f"Downloading {model_name}", total=total)
+        with open(dest, "wb") as f:
+            for chunk in resp.iter_content(chunk_size=8192):
+                if not chunk:
+                    continue
+                f.write(chunk)
+                downloaded += len(chunk)
+                if progress and total:
+                    progress(downloaded, desc=f"Downloading {model_name}", total=total)
+        if progress:
+            progress(total, desc="Download complete", total=total)
     except Exception as e:
         if os.path.exists(dest):
             os.remove(dest)
@@ -165,14 +181,14 @@ def refresh_lists(selected_category=None):
 
 gallery_images = []
 
-def get_pipeline(model_name):
+def get_pipeline(model_name, progress=None):
     """Load and cache the diffusion pipeline for the given model."""
     if model_name not in PIPELINES:
         repo = MODEL_LOOKUP.get(model_name)
         if not repo or not os.path.isfile(repo):
             # Attempt to download the model file if it doesn't exist
             try:
-                repo = download_model_file(model_name)
+                repo = download_model_file(model_name, progress=progress)
                 # rebuild lookup so subsequent calls see the new path
                 MODEL_LOOKUP[model_name] = repo
             except Exception as e:
@@ -218,6 +234,7 @@ def generate_image(
     batch_count,
     preset,
     smooth_preview,
+    progress=gr.Progress(),
 ):
     """Generate one or more images using the selected diffusion model."""
     if seed is None:
@@ -228,7 +245,7 @@ def generate_image(
         if enhancement:
             prompt = f"{prompt}, {enhancement}"
 
-    pipe = get_pipeline(model)
+    pipe = get_pipeline(model, progress=progress)
 
     # Toggle safety checker based on nsfw_filter flag
     if not hasattr(pipe, "_original_safety_checker"):

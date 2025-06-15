@@ -7,3 +7,4 @@ diffusers
 torch
 transformers
 imageio
+requests
