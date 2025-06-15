@@ -1,0 +1,48 @@
+{
+  "SD15": {
+    "sd15": {
+      "url": "https://huggingface.co/runwayml/stable-diffusion-v1-5/resolve/main/v1-5-pruned-emaonly.safetensors",
+      "description": "Official base model",
+      "fp16": true
+    },
+    "waifu_diffusion": {
+      "url": "https://huggingface.co/hakurei/waifu-diffusion/resolve/main/waifu-diffusion-v1-3.ckpt",
+      "description": "Anime-focused model",
+      "fp16": false
+    },
+    "realistic_vision_v2": {
+      "url": "https://huggingface.co/SG161222/Realistic_Vision_V2.0/resolve/main/Realistic_Vision_V2.0.safetensors",
+      "description": "Realistic look",
+      "fp16": true
+    },
+    "dreamshaper_v7": {
+      "url": "https://huggingface.co/.../resolve/main/dreamshaper_v7.safetensors",
+      "description": "General-purpose SD 1.5 model with artistic style",
+      "fp16": true
+    }
+  },
+  "SDXL": {
+    "sdxl_base": {
+      "url": "https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0/resolve/main/sd_xl_base_1.0.safetensors",
+      "description": "SDXL base model",
+      "fp16": true
+    },
+    "juggernaut_xl": {
+      "url": "https://huggingface.co/RunDiffusion/Juggernaut-XL/resolve/main/juggernautXL_version2.safetensors",
+      "description": "Versatile & popular",
+      "fp16": true
+    }
+  },
+  "PonyXL": {
+    "pony_diffusion_v6_xl": {
+      "url": "https://huggingface.co/stablediffusionapi/pony-diffusion-v6-xl/resolve/main/pony-diffusion-v6-xl.safetensors",
+      "description": "High-quality MyLittlePony model for SDXL",
+      "fp16": false
+    },
+    "ponyxl": {
+      "url": "https://huggingface.co/glides/ponyxl/resolve/main/ponyxl.safetensors",
+      "description": "Base model for horses",
+      "fp16": true
+    }
+  }
+}
