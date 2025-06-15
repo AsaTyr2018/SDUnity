@@ -43,14 +43,6 @@ Sorting & filtering by model, LoRA, date, and tags.
 Bulk download/export options.
 Optional: Create themed "Collections" or "Albums".
 
-## Optional (Future Roadmap Ideas)
-User system (with local login/authentication and usage tracking).
-API access for external tools to call the generator.
-Dynamic LoRA merging/blending.
-Integration with your FiftyOne-based deduplication pipeline.
-Animated LoRA preview (show effect across same prompt).
-Multi-user collaboration gallery ("Community Mode").
-
 Naming Note
 “SDUnity” emphasizes the unity of features — generator, models, LoRAs, and gallery — under one cohesive UI.
 
