@@ -8,7 +8,7 @@ SDUnity is a self-hosted web interface built with [Gradio](https://www.gradio.ap
 - Prompt and Negative Prompt inputs
 - Real-time seed control
 - Aspect ratio and sampling step sliders
-- Optional Smooth Preview mode showing intermediate steps
+ - Optional Smooth Preview mode showing intermediate steps as a GIF
 
 ### Model Selector
 - Choose between predefined Hugging Face models or any files placed in `models/`
