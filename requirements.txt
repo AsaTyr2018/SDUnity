@@ -3,3 +3,5 @@ pillow
 numpy
 fastapi
 uvicorn
+diffusers
+torch

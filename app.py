@@ -4,15 +4,26 @@ import random
 import gradio as gr
 from PIL import Image
 import numpy as np
+import torch
+from diffusers import DiffusionPipeline, StableDiffusionPipeline
 
 MODELS_DIR = "models"
 LORA_DIR = "loras"
 
+# Predefined huggingface models
+PREDEFINED_MODELS = {
+    "sd15": "runwayml/stable-diffusion-v1-5",
+    "sdxl": "stabilityai/stable-diffusion-xl-base-1.0",
+    "ponyxl": "glides/ponyxl",
+}
+
+# Cache for loaded pipelines
+PIPELINES = {}
+
 
 def list_models():
-    if not os.path.isdir(MODELS_DIR):
-        return []
-    return [f for f in os.listdir(MODELS_DIR) if f.lower().endswith(".ckpt")]
+    """Return available model names."""
+    return list(PREDEFINED_MODELS.keys())
 
 
 def list_loras():
@@ -28,14 +39,43 @@ def refresh_lists():
 
 gallery_images = []
 
+def get_pipeline(model_name):
+    """Load and cache the diffusion pipeline for the given model."""
+    if model_name not in PIPELINES:
+        repo = PREDEFINED_MODELS.get(model_name)
+        if repo is None:
+            raise ValueError(f"Unknown model: {model_name}")
+        if model_name == "sdxl":
+            pipe = DiffusionPipeline.from_pretrained(
+                repo, torch_dtype=torch.float16, variant="fp16"
+            )
+        else:
+            pipe = StableDiffusionPipeline.from_pretrained(
+                repo, torch_dtype=torch.float16
+            )
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        pipe.to(device)
+        PIPELINES[model_name] = pipe
+    return PIPELINES[model_name]
+
 
 def generate_image(prompt, negative_prompt, seed, steps, width, height, model, lora):
-    """Placeholder generator that returns a random image."""
+    """Generate an image using the selected diffusion model."""
     if seed is None:
         seed = random.randint(0, 2**32 - 1)
-    rng = np.random.default_rng(seed)
-    arr = rng.integers(0, 256, (height, width, 3), dtype=np.uint8)
-    img = Image.fromarray(arr)
+
+    pipe = get_pipeline(model)
+    generator = torch.Generator(device=pipe.device).manual_seed(int(seed))
+
+    result = pipe(
+        prompt,
+        negative_prompt=negative_prompt,
+        width=int(width),
+        height=int(height),
+        num_inference_steps=int(steps),
+        generator=generator,
+    )
+    img = result.images[0]
     gallery_images.append(img)
     return img, seed, gallery_images
 
@@ -53,7 +93,7 @@ with gr.Blocks() as demo:
         height = gr.Slider(64, 1024, value=256, step=64, label="Height")
 
     with gr.Row():
-        model = gr.Dropdown(choices=list_models(), label="Model")
+        model = gr.Dropdown(choices=list_models(), value="sd15", label="Model")
         lora = gr.Dropdown(choices=list_loras(), label="LoRA", multiselect=True)
         refresh = gr.Button("Refresh")
 
