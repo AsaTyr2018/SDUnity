@@ -167,6 +167,7 @@ def generate_image(
     images_per_batch,
     batch_count,
     preset,
+    smooth_preview,
 ):
     """Generate one or more images using the selected diffusion model."""
     if seed is None:
@@ -187,6 +188,22 @@ def generate_image(
     generator = torch.Generator(device=pipe.device).manual_seed(int(seed))
 
     images = []
+    preview_frames = [] if smooth_preview else None
+
+    def save_preview(step, t, latents):
+        if preview_frames is None:
+            return
+        if hasattr(pipe, "decode_latents"):
+            imgs = pipe.decode_latents(latents)
+            imgs = pipe.numpy_to_pil(imgs)
+        else:
+            lat = latents / 0.18215
+            imgs = pipe.vae.decode(lat).sample
+            imgs = (imgs / 2 + 0.5).clamp(0, 1)
+            imgs = imgs.detach().cpu().permute(0, 2, 3, 1).numpy()
+            imgs = [Image.fromarray((img * 255).astype("uint8")) for img in imgs]
+        preview_frames.append(imgs[0])
+
     for _ in range(int(batch_count)):
         result = pipe(
             prompt,
@@ -196,6 +213,8 @@ def generate_image(
             num_inference_steps=int(steps),
             generator=generator,
             num_images_per_prompt=int(images_per_batch),
+            callback=save_preview if smooth_preview else None,
+            callback_steps=1 if smooth_preview else None,
         )
         images.extend(result.images)
 
@@ -205,7 +224,16 @@ def generate_image(
     else:
         last_img = None
 
-    return last_img, seed, gallery_images
+    preview_data = None
+    if smooth_preview and preview_frames:
+        import io, imageio
+
+        buffer = io.BytesIO()
+        imageio.mimsave(buffer, preview_frames, format="GIF", duration=0.2)
+        buffer.seek(0)
+        preview_data = buffer
+
+    return last_img, seed, preview_data, gallery_images
 
 with gr.Blocks() as demo:
     gr.Markdown("# SDUnity - Prototype")
@@ -243,6 +271,7 @@ with gr.Blocks() as demo:
             with gr.Group():
                 gr.Markdown("### Additional Settings")
                 nsfw_filter = gr.Checkbox(label="NSFW Filter", value=True)
+                smooth_preview_chk = gr.Checkbox(label="Smooth Preview", value=False)
                 images_per_batch = gr.Number(
                     label="Images per Batch", value=1, precision=0
                 )
@@ -258,6 +287,7 @@ with gr.Blocks() as demo:
 
     with gr.Row():
         output = gr.Image(label="Result")
+        preview = gr.Image(label="Preview", visible=False)
         gallery = gr.Gallery(label="Gallery")
 
     generate_btn.click(
@@ -272,11 +302,12 @@ with gr.Blocks() as demo:
             model,
             lora,
             nsfw_filter,
+            smooth_preview_chk,
             images_per_batch,
             batch_count,
             preset,
         ],
-        outputs=[output, seed, gallery],
+        outputs=[output, seed, preview, gallery],
     )
     refresh.click(
         refresh_lists,
