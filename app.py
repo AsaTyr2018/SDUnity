@@ -1,5 +1,6 @@
 import os
 import random
+import json
 
 import gradio as gr
 from PIL import Image
@@ -28,68 +29,73 @@ PRESETS = load_presets()
 
 MODELS_DIR = "models"
 LORA_DIR = "loras"
+MODEL_REGISTRY_PATH = os.path.join("config", "model_registry.json")
 
-# Predefined HuggingFace models organized by type
-PREDEFINED_MODELS = {
-    "SD 1.5": {
-        "sd15": "runwayml/stable-diffusion-v1-5",
-        "waifu_diffusion": "hakurei/waifu-diffusion",
-        "realistic_vision_v2": "SG161222/Realistic_Vision_V2.0",
-    },
-    "SDXL": {
-        "sdxl_base": "stabilityai/stable-diffusion-xl-base-1.0",
-        "juggernaut_xl": "RunDiffusion/Juggernaut-XL",
-    },
-    "PonyXL": {
-        "pony_diffusion_v6_xl": "stablediffusionapi/pony-diffusion-v6-xl",
-        "ponyxl": "glides/ponyxl",
-    },
-}
 
-# Flattened lookup for convenience
-MODEL_LOOKUP = {
-    key: repo
-    for models in PREDEFINED_MODELS.values()
-    for key, repo in models.items()
-}
+def load_model_registry(path=MODEL_REGISTRY_PATH):
+    if not os.path.isfile(path):
+        return {}
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+MODEL_REGISTRY = load_model_registry()
+
+
+def build_model_lookup():
+    lookup = {}
+    for category, models in MODEL_REGISTRY.items():
+        for _name, info in models.items():
+            filename = os.path.basename(info.get("url", ""))
+            if filename:
+                lookup[filename] = os.path.join(MODELS_DIR, category, filename)
+    if os.path.isdir(MODELS_DIR):
+        for root, _dirs, files in os.walk(MODELS_DIR):
+            for f in files:
+                if f.lower().endswith((".ckpt", ".safetensors", ".bin")):
+                    lookup[f] = os.path.join(root, f)
+    return lookup
+
+
+MODEL_LOOKUP = build_model_lookup()
 
 # Cache for loaded pipelines
 PIPELINES = {}
 
 
 def list_categories():
-    """Return available model categories."""
-    cats = list(PREDEFINED_MODELS.keys())
+    """Return available model categories discovered locally or in the registry."""
+    cats = set(MODEL_REGISTRY.keys())
     if os.path.isdir(MODELS_DIR):
         for fname in os.listdir(MODELS_DIR):
             path = os.path.join(MODELS_DIR, fname)
-            if os.path.isdir(path) or fname.lower().endswith((".ckpt", ".safetensors", ".bin")):
-                if "Local" not in cats:
-                    cats.append("Local")
-                break
-    return cats
+            if os.path.isdir(path):
+                cats.add(fname)
+            elif fname.lower().endswith((".ckpt", ".safetensors", ".bin")):
+                cats.add("Uncategorized")
+    return sorted(cats)
 
 
 def list_models(category=None):
-    """Return model names for the given category (or all)."""
+    """Return model file names for the given category."""
     names = []
-    if category in PREDEFINED_MODELS:
-        names.extend(PREDEFINED_MODELS[category].keys())
-    elif category == "Local":
-        if os.path.isdir(MODELS_DIR):
-            for fname in os.listdir(MODELS_DIR):
-                path = os.path.join(MODELS_DIR, fname)
-                if os.path.isdir(path) or fname.lower().endswith((".ckpt", ".safetensors", ".bin")):
+    if category in MODEL_REGISTRY:
+        for _name, info in MODEL_REGISTRY[category].items():
+            filename = os.path.basename(info.get("url", ""))
+            if filename:
+                names.append(filename)
+    cat_dir = os.path.join(MODELS_DIR, category) if category else None
+    if cat_dir and os.path.isdir(cat_dir):
+        for fname in os.listdir(cat_dir):
+            if fname.lower().endswith((".ckpt", ".safetensors", ".bin")):
+                if fname not in names:
                     names.append(fname)
-    else:
-        for models in PREDEFINED_MODELS.values():
-            names.extend(models.keys())
-        if os.path.isdir(MODELS_DIR):
-            for fname in os.listdir(MODELS_DIR):
-                path = os.path.join(MODELS_DIR, fname)
-                if os.path.isdir(path) or fname.lower().endswith((".ckpt", ".safetensors", ".bin")):
-                    names.append(fname)
-    return names
+    if category == "Uncategorized" and os.path.isdir(MODELS_DIR):
+        for fname in os.listdir(MODELS_DIR):
+            path = os.path.join(MODELS_DIR, fname)
+            if os.path.isfile(path) and fname.lower().endswith((".ckpt", ".safetensors", ".bin")):
+                names.append(fname)
+    return sorted(names)
 
 
 def list_loras():
@@ -100,6 +106,8 @@ def list_loras():
 
 def refresh_lists(selected_category=None):
     """Return updated choices for category, model and LoRA dropdowns."""
+    global MODEL_LOOKUP
+    MODEL_LOOKUP = build_model_lookup()
     categories = list_categories()
     if selected_category not in categories:
         selected_category = categories[0] if categories else None
@@ -118,21 +126,13 @@ def get_pipeline(model_name):
     if model_name not in PIPELINES:
         repo = MODEL_LOOKUP.get(model_name)
         if repo is None:
-            local_path = os.path.join(MODELS_DIR, model_name)
-            if not os.path.exists(local_path):
-                raise ValueError(f"Unknown model: {model_name}")
-            repo = local_path
+            raise ValueError(f"Unknown model: {model_name}")
 
         if "xl" in model_name.lower() or "xl" in repo.lower():
             try:
-                if os.path.isfile(repo):
-                    pipe = DiffusionPipeline.from_single_file(
-                        repo, torch_dtype=torch.float16, variant="fp16"
-                    )
-                else:
-                    pipe = DiffusionPipeline.from_pretrained(
-                        repo, torch_dtype=torch.float16, variant="fp16"
-                    )
+                pipe = DiffusionPipeline.from_single_file(
+                    repo, torch_dtype=torch.float16, variant="fp16"
+                )
             except ImportError as e:
                 raise RuntimeError(
                     "StableDiffusionXLPipeline requires the 'transformers' library. "
@@ -140,14 +140,9 @@ def get_pipeline(model_name):
                 ) from e
         else:
             try:
-                if os.path.isfile(repo):
-                    pipe = StableDiffusionPipeline.from_single_file(
-                        repo, torch_dtype=torch.float16
-                    )
-                else:
-                    pipe = StableDiffusionPipeline.from_pretrained(
-                        repo, torch_dtype=torch.float16
-                    )
+                pipe = StableDiffusionPipeline.from_single_file(
+                    repo, torch_dtype=torch.float16
+                )
             except ImportError as e:
                 raise RuntimeError(
                     "StableDiffusionPipeline requires the 'transformers' library. "

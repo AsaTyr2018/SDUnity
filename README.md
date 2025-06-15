@@ -26,17 +26,10 @@ SDUnity is a self-hosted web interface built with [Gradio](https://www.gradio.ap
 
 ## Built-in Models
 
-SDUnity includes presets for several popular models. Additional `.safetensors` or `.ckpt` files placed in `models/` are automatically detected.
-
-| Type | Hugging Face Model | Notes |
-|------|-------------------|------|
-| **SD 1.5** | `runwayml/stable-diffusion-v1-5` | Official base model |
-| | `hakurei/waifu-diffusion` | Anime focus |
-| | `SG161222/Realistic_Vision_V2.0` | Realistic look |
-| **SDXL** | `stabilityai/stable-diffusion-xl-base-1.0` | SDXL base |
-| | `RunDiffusion/Juggernaut-XL` | Versatile & popular |
-| **PonyXL** | `stablediffusionapi/pony-diffusion-v6-xl` | Ponies and anthro |
-| | `glides/ponyxl` | Base model for horses |
+All predefined models are listed in `config/model_registry.json`. Run
+`python scripts/download_models.py` to download them into the `models/` folder
+sorted by category. Any additional `.safetensors` or `.ckpt` files placed in
+`models/` are automatically detected by the app.
 
 ## Setup
 
@@ -48,9 +41,10 @@ SDUnity includes presets for several popular models. Additional `.safetensors` o
    ```bash
    python scripts/analyze_data.py path/to/images
    ```
-3. Ensure folders for models and LoRAs exist:
+3. Ensure folders for models and LoRAs exist and download the predefined models:
    ```bash
    mkdir -p models loras
+   python scripts/download_models.py
    ```
 4. Launch the app:
    ```bash
