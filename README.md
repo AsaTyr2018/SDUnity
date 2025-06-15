@@ -14,17 +14,13 @@ in the selector.
 
 | Modelltyp | Modell (Hugging Face) | Besonderheiten |
 | --------- | --------------------- | -------------- |
-| **SD 1.5** | SG161222/Realistic_Vision_V6 | Fotorealistisch, sehr beliebt |
-| | XpucT/Deliberate | Detailreich & kreativ |
-| | fluently/Fluently-v4 | Vielseitig & ästhetisch |
-| **SDXL** | fluently/Fluently‑XL‑Final | Hoch frequentiert, stabil |
-| | SG161222/RealVisXL_V4.0 | Prompt-treu & qualitativ |
-| | ehristoforu/Visionix-alpha | Trendmodell |
-| | Halcyon 1.7 | Reddit-Topwahl für Details |
-| | SDXL-Lightning | Schnellverfahren mit guter Qualität |
-| **PonyXL** | glides/ponyxl | Gute Basis für Pferde |
-| | LyliaEngine/Pony Diffusion V6 XL | Anthro/SFW & NSFW flexibel |
-| | John6666/damn-ponyxl-realistic-v3-sdxl | Fotorealistische Pferde |
+| **SD 1.5** | runwayml/stable-diffusion-v1-5 | Offizielles Basis-Modell |
+| | hakurei/waifu-diffusion | Anime-Fokus |
+| | SG161222/Realistic_Vision_V2.0 | Realistischer Look |
+| **SDXL** | stabilityai/stable-diffusion-xl-base-1.0 | SDXL Basis |
+| | RunDiffusion/Juggernaut-XL | Vielseitig & beliebt |
+| **PonyXL** | stablediffusionapi/pony-diffusion-v6-xl | Ponys & Anthro |
+| | glides/ponyxl | Gute Basis für Pferde |
 
 ## Setup
 
