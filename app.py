@@ -46,13 +46,25 @@ def get_pipeline(model_name):
         if repo is None:
             raise ValueError(f"Unknown model: {model_name}")
         if model_name == "sdxl":
-            pipe = DiffusionPipeline.from_pretrained(
-                repo, torch_dtype=torch.float16, variant="fp16"
-            )
+            try:
+                pipe = DiffusionPipeline.from_pretrained(
+                    repo, torch_dtype=torch.float16, variant="fp16"
+                )
+            except ImportError as e:
+                raise RuntimeError(
+                    "StableDiffusionXLPipeline requires the 'transformers' library. "
+                    "Install it with `pip install transformers`."
+                ) from e
         else:
-            pipe = StableDiffusionPipeline.from_pretrained(
-                repo, torch_dtype=torch.float16
-            )
+            try:
+                pipe = StableDiffusionPipeline.from_pretrained(
+                    repo, torch_dtype=torch.float16
+                )
+            except ImportError as e:
+                raise RuntimeError(
+                    "StableDiffusionPipeline requires the 'transformers' library. "
+                    "Install it with `pip install transformers`."
+                ) from e
         device = "cuda" if torch.cuda.is_available() else "cpu"
         pipe.to(device)
         PIPELINES[model_name] = pipe
