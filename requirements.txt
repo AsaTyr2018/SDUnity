@@ -1,34 +1,8 @@
 # SDUnity – initial requirements.txt
 # ────────────────────────────────
 # Core UI
-gradio==5.34.0             
-
-# Diffusion / Transformers stack
-diffusers[torch]==0.33.1    
-transformers==4.52.4        
-accelerate==1.7.0           
-safetensors==0.5.3          
-peft==0.15.2                
-huggingface-hub==0.33.0     
-
-# Deep-learning runtime
-# Install the CUDA/ROCm build of torch that matches your GPU, e.g.
-# pip install torch==2.7.0+cu118 -f https://download.pytorch.org/whl/torch_stable.html
-torch==2.7.0
-xformers==0.0.30            # memory-efficient attention (optional but recommended)
-
-# Image handling & utilities
-pillow==11.2.1              
-opencv-python==4.11.0.84    
-tqdm==4.66.2                
-psutil==5.9.9               
-filetype==1.3.0             
-python-dotenv==1.0.1        
-
-# Metadata & persistence
-sqlalchemy==2.0.41          
-pydantic==2.11.1            
-
-# Optional REST / backend extras
-fastapi==0.115.12           
-uvicorn[standard]==0.34.3    
+gradio==5.34.0
+pillow
+numpy
+fastapi
+uvicorn
