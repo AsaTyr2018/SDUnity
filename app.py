@@ -29,40 +29,66 @@ PRESETS = load_presets()
 MODELS_DIR = "models"
 LORA_DIR = "loras"
 
-# Predefined HuggingFace models
+# Predefined HuggingFace models organized by type
 PREDEFINED_MODELS = {
-    # SD 1.5 models
-    "sd15": "runwayml/stable-diffusion-v1-5",
-    "realistic_vision_v6": "SG161222/Realistic_Vision_V6",
-    "deliberate": "XpucT/Deliberate",
-    "fluently_v4": "fluently/Fluently-v4",
+    "SD 1.5": {
+        "sd15": "runwayml/stable-diffusion-v1-5",
+        "waifu_diffusion": "hakurei/waifu-diffusion",
+        "realistic_vision_v2": "SG161222/Realistic_Vision_V2.0",
+    },
+    "SDXL": {
+        "sdxl_base": "stabilityai/stable-diffusion-xl-base-1.0",
+        "juggernaut_xl": "RunDiffusion/Juggernaut-XL",
+    },
+    "PonyXL": {
+        "pony_diffusion_v6_xl": "stablediffusionapi/pony-diffusion-v6-xl",
+        "ponyxl": "glides/ponyxl",
+    },
+}
 
-    # SDXL models
-    "sdxl": "stabilityai/stable-diffusion-xl-base-1.0",
-    "fluently_xl_final": "fluently/Fluently-Xl-Final",
-    "realvisxl_v4": "SG161222/RealVisXL_V4.0",
-    "visionix_alpha": "ehristoforu/Visionix-alpha",
-    "halcyon_1_7": "Halcyon 1.7",
-    "sdxl_lightning": "SDXL-Lightning",
-
-    # PonyXL models
-    "ponyxl": "glides/ponyxl",
-    "pony_diffusion_v6_xl": "LyliaEngine/Pony Diffusion V6 XL",
-    "ponyxl_realistic_v3": "John6666/damn-ponyxl-realistic-v3-sdxl",
+# Flattened lookup for convenience
+MODEL_LOOKUP = {
+    key: repo
+    for models in PREDEFINED_MODELS.values()
+    for key, repo in models.items()
 }
 
 # Cache for loaded pipelines
 PIPELINES = {}
 
 
-def list_models():
-    """Return available model names, including local models in MODELS_DIR."""
-    names = list(PREDEFINED_MODELS.keys())
+def list_categories():
+    """Return available model categories."""
+    cats = list(PREDEFINED_MODELS.keys())
     if os.path.isdir(MODELS_DIR):
         for fname in os.listdir(MODELS_DIR):
             path = os.path.join(MODELS_DIR, fname)
             if os.path.isdir(path) or fname.lower().endswith((".ckpt", ".safetensors", ".bin")):
-                names.append(fname)
+                if "Local" not in cats:
+                    cats.append("Local")
+                break
+    return cats
+
+
+def list_models(category=None):
+    """Return model names for the given category (or all)."""
+    names = []
+    if category in PREDEFINED_MODELS:
+        names.extend(PREDEFINED_MODELS[category].keys())
+    elif category == "Local":
+        if os.path.isdir(MODELS_DIR):
+            for fname in os.listdir(MODELS_DIR):
+                path = os.path.join(MODELS_DIR, fname)
+                if os.path.isdir(path) or fname.lower().endswith((".ckpt", ".safetensors", ".bin")):
+                    names.append(fname)
+    else:
+        for models in PREDEFINED_MODELS.values():
+            names.extend(models.keys())
+        if os.path.isdir(MODELS_DIR):
+            for fname in os.listdir(MODELS_DIR):
+                path = os.path.join(MODELS_DIR, fname)
+                if os.path.isdir(path) or fname.lower().endswith((".ckpt", ".safetensors", ".bin")):
+                    names.append(fname)
     return names
 
 
@@ -72,9 +98,17 @@ def list_loras():
     return [f for f in os.listdir(LORA_DIR) if f.lower().endswith(".safetensors")]
 
 
-def refresh_lists():
-    """Return updated choices for model and LoRA dropdowns."""
-    return gr.update(choices=list_models()), gr.update(choices=list_loras())
+def refresh_lists(selected_category=None):
+    """Return updated choices for category, model and LoRA dropdowns."""
+    categories = list_categories()
+    if selected_category not in categories:
+        selected_category = categories[0] if categories else None
+    models = list_models(selected_category)
+    return (
+        gr.update(choices=categories, value=selected_category),
+        gr.update(choices=models, value=models[0] if models else None),
+        gr.update(choices=list_loras()),
+    )
 
 
 gallery_images = []
@@ -82,7 +116,7 @@ gallery_images = []
 def get_pipeline(model_name):
     """Load and cache the diffusion pipeline for the given model."""
     if model_name not in PIPELINES:
-        repo = PREDEFINED_MODELS.get(model_name)
+        repo = MODEL_LOOKUP.get(model_name)
         if repo is None:
             local_path = os.path.join(MODELS_DIR, model_name)
             if not os.path.exists(local_path):
@@ -193,7 +227,16 @@ with gr.Blocks() as demo:
                 height = gr.Slider(64, 1024, value=256, step=64, label="Height")
 
             with gr.Row():
-                model = gr.Dropdown(choices=list_models(), value="sd15", label="Model")
+                model_category = gr.Radio(
+                    choices=list_categories(),
+                    value=list_categories()[0] if list_categories() else None,
+                    label="Model Type",
+                )
+                model = gr.Dropdown(
+                    choices=list_models(list_categories()[0] if list_categories() else None),
+                    label="Model",
+                )
+            with gr.Row():
                 lora = gr.Dropdown(choices=list_loras(), label="LoRA", multiselect=True)
                 refresh = gr.Button("Refresh")
 
@@ -240,7 +283,16 @@ with gr.Blocks() as demo:
         ],
         outputs=[output, seed, gallery],
     )
-    refresh.click(refresh_lists, outputs=[model, lora])
+    refresh.click(
+        refresh_lists,
+        inputs=model_category,
+        outputs=[model_category, model, lora],
+    )
+    model_category.change(
+        lambda c: gr.update(choices=list_models(c), value=list_models(c)[0] if list_models(c) else None),
+        inputs=model_category,
+        outputs=model,
+    )
 
 if __name__ == "__main__":
     demo.launch(server_name="0.0.0.0", share=False)
