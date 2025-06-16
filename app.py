@@ -324,21 +324,36 @@ def generate_image(
 
     return last_img, seed, preview_data, gallery_images
 
-with gr.Blocks() as demo:
-    gr.Markdown("# SDUnity - Prototype")
+theme = gr.themes.Monochrome(primary_hue="slate").set(
+    body_background_fill="#111111",
+    body_background_fill_dark="#111111",
+    body_text_color="#e0e0e0",
+    body_text_color_dark="#e0e0e0",
+    block_background_fill="#1e1e1e",
+    block_background_fill_dark="#1e1e1e",
+    block_border_color="#333333",
+    block_border_color_dark="#333333",
+    input_background_fill="#222222",
+    input_background_fill_dark="#222222",
+    input_text_color="#e0e0e0",
+)
+
+with gr.Blocks(theme=theme) as demo:
+    gr.Markdown("# SDUnity")
 
     with gr.Row():
-        with gr.Column(scale=3):
-            prompt = gr.Textbox(label="Prompt")
-            negative_prompt = gr.Textbox(label="Negative Prompt")
+        with gr.Column(scale=2):
+            prompt = gr.Textbox(label="Prompt", lines=2)
+            negative_prompt = gr.Textbox(label="Negative Prompt", lines=2)
+            preset = gr.Dropdown(
+                choices=list(PRESETS.keys()),
+                label="Preset",
+                value=None,
+            )
+            generate_btn = gr.Button("Generate", variant="primary")
 
-            with gr.Row():
-                seed = gr.Number(label="Seed", value=None, precision=0)
-                steps = gr.Slider(1, 50, value=20, label="Steps")
-                width = gr.Slider(64, 1024, value=256, step=64, label="Width")
-                height = gr.Slider(64, 1024, value=256, step=64, label="Height")
-
-            with gr.Row():
+        with gr.Column(scale=1):
+            with gr.Accordion("Model", open=True):
                 model_category = gr.Radio(
                     choices=list_categories(),
                     value=list_categories()[0] if list_categories() else None,
@@ -348,31 +363,17 @@ with gr.Blocks() as demo:
                     choices=list_models(list_categories()[0] if list_categories() else None),
                     label="Model",
                 )
-            with gr.Row():
                 lora = gr.Dropdown(choices=list_loras(), label="LoRA", multiselect=True)
                 refresh = gr.Button("Refresh")
-
-            generate_btn = gr.Button("Generate")
-
-        with gr.Column(scale=1):
-            # Box was removed in newer versions of Gradio; Group provides a
-            # simple container without padding/margin.
-            with gr.Group():
-                gr.Markdown("### Additional Settings")
+            with gr.Accordion("Generation Settings", open=False):
+                seed = gr.Number(label="Seed", value=None, precision=0)
+                steps = gr.Slider(1, 50, value=20, label="Steps")
+                width = gr.Slider(64, 1024, value=256, step=64, label="Width")
+                height = gr.Slider(64, 1024, value=256, step=64, label="Height")
                 nsfw_filter = gr.Checkbox(label="NSFW Filter", value=True)
                 smooth_preview_chk = gr.Checkbox(label="Smooth Preview", value=False)
-                images_per_batch = gr.Number(
-                    label="Images per Batch", value=1, precision=0
-                )
-            batch_count = gr.Number(label="Batch Count", value=1, precision=0)
-
-        with gr.Group():
-            gr.Markdown("### Presets")
-            preset = gr.Dropdown(
-                choices=list(PRESETS.keys()),
-                label="Preset",
-                value=None,
-            )
+                images_per_batch = gr.Number(label="Images per Batch", value=1, precision=0)
+                batch_count = gr.Number(label="Batch Count", value=1, precision=0)
 
     with gr.Row():
         output = gr.Image(label="Result")
