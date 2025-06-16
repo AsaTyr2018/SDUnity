@@ -28,8 +28,14 @@ def _headers() -> dict:
     return {}
 
 
-def search_models(query: str = "", model_type: str = "sd15", sort: str = "Most Downloaded", limit: int = 20):
-    """Search models on Civitai and filter by base model."""
+def search_models(
+    query: str = "",
+    model_type: str = "sd15",
+    sort: str = "Most Downloaded",
+    limit: int = 20,
+):
+    """Search models on Civitai and return metadata and versions."""
+
     params = {
         "types": "Checkpoint",
         "limit": limit,
@@ -37,31 +43,54 @@ def search_models(query: str = "", model_type: str = "sd15", sort: str = "Most D
     }
     if query:
         params["query"] = query
+
     resp = requests.get(API_URL, params=params, timeout=30, headers=_headers())
     resp.raise_for_status()
     data = resp.json()
+
     base = BASE_MODEL_MAP.get(model_type, "SD 1.5")
     items = []
+
     for item in data.get("items", []):
-        versions = item.get("modelVersions") or []
+        versions = []
+        for ver in item.get("modelVersions") or []:
+            if ver.get("baseModel") != base:
+                continue
+            url = ver.get("downloadUrl")
+            if not url:
+                continue
+            img = None
+            images = ver.get("images") or []
+            if images:
+                img = images[0].get("url")
+            versions.append(
+                {
+                    "id": ver.get("id"),
+                    "name": ver.get("name"),
+                    "downloadUrl": url,
+                    "image": img,
+                    "trainedWords": ver.get("trainedWords"),
+                    "description": ver.get("description"),
+                    "stats": ver.get("stats", {}),
+                }
+            )
+
         if not versions:
             continue
-        ver = versions[0]
-        if ver.get("baseModel") != base:
-            continue
-        download_url = ver.get("downloadUrl")
-        if not download_url:
-            continue
-        image = None
-        images = ver.get("images") or []
-        if images:
-            image = images[0].get("url")
-        items.append({
-            "name": item.get("name"),
-            "versionId": ver.get("id"),
-            "downloadUrl": download_url,
-            "image": image,
-        })
+
+        preview = versions[0].get("image")
+
+        items.append(
+            {
+                "id": item.get("id"),
+                "name": item.get("name"),
+                "description": item.get("description"),
+                "stats": item.get("stats", {}),
+                "versions": versions,
+                "preview": preview,
+            }
+        )
+
     return items
 
 
@@ -95,3 +124,20 @@ def download_model(download_url: str, dest_dir: str, progress=None) -> str:
     if progress is not None:
         progress(total, desc="Download complete", total=total)
     return dest
+
+
+def format_metadata(model: dict, version: dict) -> str:
+    """Return a simple markdown string summarising model metadata."""
+
+    lines = []
+    if model.get("description"):
+        lines.append(model["description"].split("\n")[0])
+    stats = model.get("stats", {})
+    if stats.get("downloadCount"):
+        lines.append(f"Downloads: {stats['downloadCount']}")
+    if stats.get("rating"):
+        lines.append(f"Rating: {stats['rating']:.1f}")
+    if version.get("trainedWords"):
+        words = ", ".join(version["trainedWords"])
+        lines.append(f"Trigger: {words}")
+    return "\n".join(lines)

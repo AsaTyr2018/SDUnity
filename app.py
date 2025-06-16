@@ -150,6 +150,7 @@ with gr.Blocks(theme=theme, css=css) as demo:
                             civitai_search = gr.Button("Search")
                         with gr.Column(scale=1):
                             civitai_results = gr.Dropdown(label="Results")
+                            civitai_versions = gr.Dropdown(label="Version")
                             civitai_preview = gr.Image(label="Preview", height=256, width=256)
                             civitai_progress = gr.Textbox(
                                 label="Download Progress", value="", interactive=False, visible=False
@@ -157,6 +158,8 @@ with gr.Blocks(theme=theme, css=css) as demo:
                             civitai_download = gr.Button("Download")
                             civitai_status = gr.Markdown(visible=False)
                             civitai_state = gr.State([])
+                        with gr.Column(scale=1):
+                            civitai_meta = gr.Markdown("", label="Model Info")
                     with gr.Group(elem_id="download_popup", visible=False) as download_popup:
                         with gr.Column(elem_classes="download-popup-content"):
                             popup_status = gr.Markdown()
@@ -192,33 +195,58 @@ with gr.Blocks(theme=theme, css=css) as demo:
             def _civitai_search(q, t, s):
                 results = civitai.search_models(q, t, s)
                 names = [r["name"] for r in results]
-                img = results[0].get("image") if results else None
+                if results:
+                    vers = [v["name"] for v in results[0]["versions"]]
+                    img = results[0]["versions"][0].get("image")
+                    meta = civitai.format_metadata(results[0], results[0]["versions"][0])
+                else:
+                    vers = []
+                    img = None
+                    meta = ""
                 return (
                     gr.update(choices=names, value=names[0] if names else None),
+                    gr.update(choices=vers, value=vers[0] if vers else None),
                     results,
                     img,
+                    meta,
                     gr.update(value="", visible=False),
                 )
 
             def _civitai_preview(name, state):
                 if not name:
-                    return None
+                    return None, "", gr.update(choices=[], value=None)
                 for r in state:
                     if r["name"] == name:
-                        return r.get("image")
-                return None
+                        vers = [v["name"] for v in r["versions"]]
+                        ver = r["versions"][0]
+                        img = ver.get("image")
+                        meta = civitai.format_metadata(r, ver)
+                        return img, meta, gr.update(choices=vers, value=vers[0] if vers else None)
+                return None, "", gr.update(choices=[], value=None)
 
-            def _open_download_popup(name, t, state):
+            def _civitai_version_change(model_name, version_name, state):
+                for r in state:
+                    if r["name"] == model_name:
+                        for ver in r["versions"]:
+                            if ver["name"] == version_name:
+                                img = ver.get("image")
+                                meta = civitai.format_metadata(r, ver)
+                                return img, meta
+                return None, ""
+
+            def _open_download_popup(name, ver_name, t, state):
                 for r in state:
                     if r["name"] == name:
-                        dest = os.path.join(config.MODELS_DIR, MODEL_DIR_MAP.get(t, t))
-                        filename = os.path.basename(r["downloadUrl"])
-                        msg = f"Downloading {filename} to {dest}..."
-                        return (
-                            gr.update(visible=True),
-                            gr.update(value=msg),
-                            gr.update(value="0%", visible=True),
-                        )
+                        for ver in r["versions"]:
+                            if ver["name"] == ver_name:
+                                dest = os.path.join(config.MODELS_DIR, MODEL_DIR_MAP.get(t, t))
+                                filename = os.path.basename(ver["downloadUrl"])
+                                msg = f"Downloading {filename} to {dest}..."
+                                return (
+                                    gr.update(visible=True),
+                                    gr.update(value=msg),
+                                    gr.update(value="0%", visible=True),
+                                )
                 return (
                     gr.update(visible=False),
                     gr.update(value="Model not found"),
@@ -228,55 +256,57 @@ with gr.Blocks(theme=theme, css=css) as demo:
             def _close_download_popup():
                 return gr.update(visible=False), gr.update(value="", visible=False)
 
-            def _civitai_download(name, t, state, progress=gr.Progress()):
+            def _civitai_download(name, ver_name, t, state, progress=gr.Progress()):
                 for r in state:
                     if r["name"] == name:
-                        dest_dir = os.path.join(
-                            config.MODELS_DIR, MODEL_DIR_MAP.get(t, t)
-                        )
-                        os.makedirs(dest_dir, exist_ok=True)
-                        url = r["downloadUrl"]
-                        try:
-                            resp = requests.get(
-                                url,
-                                stream=True,
-                                timeout=60,
-                                headers=civitai._headers(),
-                            )
-                            resp.raise_for_status()
-                        except Exception as e:  # pragma: no cover - network
-                            print("Civitai download failed:", e)
-                            yield gr.update(value=f"Download failed: {e}"), gr.update(value="Failed")
-                            return
-
-                        filename = civitai._extract_filename(resp, url)
-                        dest = os.path.join(dest_dir, filename)
-                        total = int(resp.headers.get("content-length", 0))
-                        downloaded = 0
-                        progress(0, desc=f"Downloading {filename}", total=total)
-                        yield gr.update(value="Download running... 0%"), gr.update(value="0%")
-                        last_percent = 0
-                        with open(dest, "wb") as f:
-                            for chunk in resp.iter_content(chunk_size=8192):
-                                if not chunk:
-                                    continue
-                                f.write(chunk)
-                                downloaded += len(chunk)
-                                if total:
-                                    percent = int(downloaded / total * 100)
-                                    progress(
-                                        downloaded,
-                                        desc=f"Downloading {filename}",
-                                        total=total,
+                        for ver in r["versions"]:
+                            if ver["name"] == ver_name:
+                                dest_dir = os.path.join(
+                                    config.MODELS_DIR, MODEL_DIR_MAP.get(t, t)
+                                )
+                                os.makedirs(dest_dir, exist_ok=True)
+                                url = ver["downloadUrl"]
+                                try:
+                                    resp = requests.get(
+                                        url,
+                                        stream=True,
+                                        timeout=60,
+                                        headers=civitai._headers(),
                                     )
-                                    if percent - last_percent >= 5:
-                                        last_percent = percent
-                                        yield gr.update(
-                                            value=f"Download running... {percent}%"
-                                        ), gr.update(value=f"{percent}%")
-                        progress(total, desc="Download complete", total=total)
-                        yield gr.update(value=f"Saved to {os.path.basename(dest)}"), gr.update(value="Done")
-                        return
+                                    resp.raise_for_status()
+                                except Exception as e:  # pragma: no cover - network
+                                    print("Civitai download failed:", e)
+                                    yield gr.update(value=f"Download failed: {e}"), gr.update(value="Failed")
+                                    return
+
+                                filename = civitai._extract_filename(resp, url)
+                                dest = os.path.join(dest_dir, filename)
+                                total = int(resp.headers.get("content-length", 0))
+                                downloaded = 0
+                                progress(0, desc=f"Downloading {filename}", total=total)
+                                yield gr.update(value="Download running... 0%"), gr.update(value="0%")
+                                last_percent = 0
+                                with open(dest, "wb") as f:
+                                    for chunk in resp.iter_content(chunk_size=8192):
+                                        if not chunk:
+                                            continue
+                                        f.write(chunk)
+                                        downloaded += len(chunk)
+                                        if total:
+                                            percent = int(downloaded / total * 100)
+                                            progress(
+                                                downloaded,
+                                                desc=f"Downloading {filename}",
+                                                total=total,
+                                            )
+                                            if percent - last_percent >= 5:
+                                                last_percent = percent
+                                                yield gr.update(
+                                                    value=f"Download running... {percent}%"
+                                                ), gr.update(value=f"{percent}%")
+                                progress(total, desc="Download complete", total=total)
+                                yield gr.update(value=f"Saved to {os.path.basename(dest)}"), gr.update(value="Done")
+                                return
                 yield gr.update(value="Model not found"), gr.update(value="")
 
             def _remove_models(paths, current_cat):
@@ -400,20 +430,32 @@ with gr.Blocks(theme=theme, css=css) as demo:
     civitai_search.click(
         _civitai_search,
         inputs=[civitai_query, civitai_type, civitai_sort],
-        outputs=[civitai_results, civitai_state, civitai_preview, civitai_status],
+        outputs=[
+            civitai_results,
+            civitai_versions,
+            civitai_state,
+            civitai_preview,
+            civitai_meta,
+            civitai_status,
+        ],
     )
     civitai_results.change(
         _civitai_preview,
         inputs=[civitai_results, civitai_state],
-        outputs=civitai_preview,
+        outputs=[civitai_preview, civitai_meta, civitai_versions],
+    )
+    civitai_versions.change(
+        _civitai_version_change,
+        inputs=[civitai_results, civitai_versions, civitai_state],
+        outputs=[civitai_preview, civitai_meta],
     )
     civitai_download.click(
         _open_download_popup,
-        inputs=[civitai_results, civitai_type, civitai_state],
+        inputs=[civitai_results, civitai_versions, civitai_type, civitai_state],
         outputs=[download_popup, popup_status, civitai_progress],
     ).then(
         _civitai_download,
-        inputs=[civitai_results, civitai_type, civitai_state],
+        inputs=[civitai_results, civitai_versions, civitai_type, civitai_state],
         outputs=[popup_status, civitai_progress],
     )
     popup_close.click(
