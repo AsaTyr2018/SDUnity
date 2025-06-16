@@ -22,3 +22,4 @@ Detail+|highly detailed, sharp|highly detailed, intricate, sharp focus, ultra hi
 Soft Focus|blurry, gentle|soft lighting, low contrast, bokeh, shallow depth of field
 Contrast Punch|strong contrast, vivid|sharp lighting, deep shadows, strong contrast, vivid colors
 Painterly|painted artwork look|oil painting, visible brushstrokes, painterly texture, canvas grain
+Pony|Quality Prompt|score_9, score_8_up, score_7_up, score_6_up, score_5_up, score_4_up
