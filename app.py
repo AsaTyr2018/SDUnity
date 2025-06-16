@@ -327,7 +327,11 @@ with gr.Blocks(theme=theme, css=css) as demo:
         inputs=[civitai_results, civitai_type, civitai_state],
         outputs=popup_status,
     )
-    popup_close.click(_close_download_popup, outputs=download_popup)
+    popup_close.click(
+        _close_download_popup,
+        outputs=download_popup,
+        _js="() => { const el = document.getElementById('download_popup'); if (el) el.style.display = 'none'; }",
+    )
 
 if __name__ == "__main__":
     # Launch Gradio using settings from config for easier customization
