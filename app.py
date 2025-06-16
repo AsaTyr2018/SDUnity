@@ -185,7 +185,7 @@ with gr.Blocks(theme=theme, css=css) as demo:
                 _refresh_gallery,
                 outputs=[gallery_grid, gallery_state, selected_image, metadata, delete_status],
             )
-            gallery_grid.load(
+            demo.load(
                 _refresh_gallery,
                 outputs=[gallery_grid, gallery_state, selected_image, metadata, delete_status],
             )
