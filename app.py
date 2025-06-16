@@ -335,7 +335,6 @@ theme = gr.themes.Monochrome(primary_hue="slate").set(
     block_border_color_dark="#333333",
     input_background_fill="#222222",
     input_background_fill_dark="#222222",
-    input_text_color="#e0e0e0",
 )
 
 with gr.Blocks(theme=theme) as demo:
