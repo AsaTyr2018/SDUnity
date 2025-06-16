@@ -3,11 +3,34 @@ import inspect
 import threading
 from queue import Queue
 from PIL import Image
-import numpy as np
 import torch
 import gradio as gr
 
 from . import presets, models, gallery
+from transformers.modeling_outputs import BaseModelOutputWithPooling
+
+
+def _apply_clip_skip(pipe, skip: int) -> None:
+    """Patch the pipeline's text encoder to apply clip skip."""
+    if skip <= 1:
+        if hasattr(pipe, "_clip_skip_patched") and pipe._clip_skip_patched:
+            pipe.text_encoder.forward = pipe._orig_text_encoder_forward
+            pipe._clip_skip_patched = False
+        return
+
+    if not hasattr(pipe, "_orig_text_encoder_forward"):
+        pipe._orig_text_encoder_forward = pipe.text_encoder.forward
+
+    def _forward(*args, **kwargs):
+        kwargs["output_hidden_states"] = True
+        out = pipe._orig_text_encoder_forward(*args, **kwargs)
+        hidden = out.hidden_states[-skip - 1]
+        hidden = pipe.text_encoder.text_model.final_layer_norm(hidden)
+        data = {**out.__dict__, "last_hidden_state": hidden}
+        return BaseModelOutputWithPooling(**data)
+
+    pipe.text_encoder.forward = _forward
+    pipe._clip_skip_patched = True
 
 
 def generate_image(
@@ -18,6 +41,8 @@ def generate_image(
     steps: int,
     width: int,
     height: int,
+    guidance_scale: float,
+    clip_skip: int,
     model_type: str,
     model: str,
     lora,
@@ -35,6 +60,10 @@ def generate_image(
     random_seed : bool
         If True, ignore the provided seed and generate a new random seed
         for this generation run.
+    guidance_scale : float
+        Classifier-free guidance scale.
+    clip_skip : int
+        Number of final CLIP layers to skip when encoding text.
     """
     if random_seed or seed is None:
         seed = random.randint(0, 2**32 - 1)
@@ -52,6 +81,8 @@ def generate_image(
     if not hasattr(pipe, "_original_safety_checker"):
         pipe._original_safety_checker = getattr(pipe, "safety_checker", None)
     pipe.safety_checker = pipe._original_safety_checker if nsfw_filter else None
+
+    _apply_clip_skip(pipe, int(clip_skip))
 
     generator = torch.Generator(device=pipe.device).manual_seed(int(seed))
 
@@ -99,6 +130,7 @@ def generate_image(
                 num_inference_steps=int(steps),
                 generator=generator,
                 num_images_per_prompt=int(images_per_batch),
+                guidance_scale=float(guidance_scale),
             )
 
             if smooth_preview:
@@ -119,6 +151,8 @@ def generate_image(
                     "steps": int(steps),
                     "width": int(width),
                     "height": int(height),
+                    "guidance_scale": float(guidance_scale),
+                    "clip_skip": int(clip_skip),
                     "model_type": model_type,
                     "model": model,
                     "lora": lora,

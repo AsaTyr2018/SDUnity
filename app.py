@@ -55,25 +55,6 @@ with gr.Blocks(theme=theme, css=css) as demo:
                     generate_btn = gr.Button("Generate", variant="primary")
 
                 with gr.Column(scale=1):
-                    with gr.Accordion("Generation Settings", open=False):
-                        seed = gr.Number(label="Seed", value=None, precision=0)
-                        random_seed_chk = gr.Checkbox(label="Random Seed", value=False)
-                        steps = gr.Slider(1, 50, value=20, label="Steps")
-                        width = gr.Slider(64, 1024, value=256, step=64, label="Width")
-                        height = gr.Slider(64, 1024, value=256, step=64, label="Height")
-                        nsfw_filter = gr.Checkbox(label="NSFW Filter", value=True)
-                        smooth_preview_chk = gr.Checkbox(
-                            label="Smooth Preview", value=False
-                        )
-                        images_per_batch = gr.Number(
-                            label="Images per Batch", value=1, precision=0, minimum=1
-                        )
-                        batch_count = gr.Number(
-                            label="Batch Count", value=1, precision=0, minimum=1
-                        )
-
-            with gr.Row():
-                with gr.Column():
                     with gr.Accordion("Model", open=True):
                         categories = models.list_categories()
                         model_category = gr.Radio(
@@ -100,6 +81,23 @@ with gr.Blocks(theme=theme, css=css) as demo:
                     height=768,
                     elem_id="preview",
                 )
+
+        with gr.TabItem("Generation Settings"):
+            seed = gr.Number(label="Seed", value=None, precision=0)
+            random_seed_chk = gr.Checkbox(label="Random Seed", value=False)
+            steps = gr.Slider(1, 50, value=20, label="Steps")
+            width = gr.Slider(64, 1024, value=256, step=64, label="Width")
+            height = gr.Slider(64, 1024, value=256, step=64, label="Height")
+            guidance_scale = gr.Slider(1, 20, value=7.5, step=0.5, label="Guidance Scale")
+            clip_skip = gr.Slider(1, 4, value=1, step=1, label="Clip Skip")
+            nsfw_filter = gr.Checkbox(label="NSFW Filter", value=True)
+            smooth_preview_chk = gr.Checkbox(label="Smooth Preview", value=False)
+            images_per_batch = gr.Number(
+                label="Images per Batch", value=1, precision=0, minimum=1
+            )
+            batch_count = gr.Number(
+                label="Batch Count", value=1, precision=0, minimum=1
+            )
 
         with gr.TabItem("Model Manager"):
             with gr.Tabs():
@@ -383,6 +381,8 @@ with gr.Blocks(theme=theme, css=css) as demo:
             steps,
             width,
             height,
+            guidance_scale,
+            clip_skip,
             model_category,
             model,
             lora,
