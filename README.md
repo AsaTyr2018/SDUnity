@@ -55,6 +55,7 @@ sorted by category. Any additional `.safetensors` or `.ckpt` files placed in
    ```
 
 The interface will be available at `http://localhost:7860/` by default. Use the controls to generate images and browse them in the gallery.
+All Gradio server options (like `share` or custom ports) can be configured in `sdunity/config.py` under `GRADIO_LAUNCH_CONFIG`.
 
 Presets for prompt enhancements are stored in `presets.txt` and can be selected from the dropdown in the UI.
 
