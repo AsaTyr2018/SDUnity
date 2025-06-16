@@ -2,6 +2,7 @@ import os
 import random
 import json
 from urllib import request
+from datetime import datetime
 import requests
 import inspect
 
@@ -37,6 +38,8 @@ PRESETS = load_presets()
 MODELS_DIR = "models"
 LORA_DIR = "loras"
 MODEL_REGISTRY_PATH = os.path.join("config", "model_registry.json")
+GENERATIONS_DIR = "generations"
+os.makedirs(GENERATIONS_DIR, exist_ok=True)
 
 
 def load_model_registry(path=MODEL_REGISTRY_PATH):
@@ -182,6 +185,27 @@ def refresh_lists(selected_category=None):
 
 gallery_images = []
 
+def save_generation(image, metadata):
+    """Save generated image and metadata to the generations directory."""
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    date_dir = os.path.join(GENERATIONS_DIR, timestamp.split("_")[0])
+    os.makedirs(date_dir, exist_ok=True)
+    filename = f"{timestamp}_{metadata.get('seed', '0')}.png"
+    img_path = os.path.join(date_dir, filename)
+    image.save(img_path)
+    meta_path = img_path.replace(".png", ".json")
+    with open(meta_path, "w", encoding="utf-8") as f:
+        json.dump(metadata, f, indent=2)
+    return img_path
+
+def load_metadata(img_path):
+    """Load metadata JSON for the given image path."""
+    meta_path = img_path.replace(".png", ".json")
+    if os.path.isfile(meta_path):
+        with open(meta_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return {}
+
 def get_pipeline(model_name, progress=None):
     """Load and cache the diffusion pipeline for the given model."""
     if model_name not in PIPELINES:
@@ -305,6 +329,18 @@ def generate_image(
                 call_kwargs["callback_steps"] = 1
 
         result = pipe(**call_kwargs)
+        for img in result.images:
+            metadata = {
+                "prompt": prompt,
+                "negative_prompt": negative_prompt,
+                "seed": int(seed),
+                "steps": int(steps),
+                "width": int(width),
+                "height": int(height),
+                "model": model,
+                "lora": lora,
+            }
+            save_generation(img, metadata)
         images.extend(result.images)
 
     if images:
@@ -322,7 +358,7 @@ def generate_image(
         buffer.seek(0)
         preview_data = buffer
 
-    return last_img, seed, preview_data, gallery_images
+    return last_img, seed, preview_data
 
 theme = gr.themes.Monochrome(primary_hue="slate").set(
     body_background_fill="#111111",
@@ -384,7 +420,31 @@ with gr.Blocks(theme=theme) as demo:
             gr.Markdown("WIP")
 
         with gr.TabItem("Gallery"):
-            gallery = gr.Gallery(label="Gallery")
+            with gr.Row():
+                with gr.Column(scale=1):
+                    file_tree = gr.FileExplorer(
+                        root_dir=GENERATIONS_DIR,
+                        glob="**/*.png",
+                        file_count="single",
+                        label="Generations",
+                        every=5,
+                    )
+                with gr.Column(scale=2):
+                    selected_image = gr.Image(label="Image")
+                    metadata = gr.JSON(label="Metadata")
+
+            def _load_selection(path):
+                if not path:
+                    return None, None
+                img = Image.open(path)
+                meta = load_metadata(path)
+                return img, meta
+
+            file_tree.change(
+                _load_selection,
+                inputs=file_tree,
+                outputs=[selected_image, metadata],
+            )
 
     generate_btn.click(
         generate_image,
@@ -403,7 +463,7 @@ with gr.Blocks(theme=theme) as demo:
             batch_count,
             preset,
         ],
-        outputs=[output, seed, preview, gallery],
+        outputs=[output, seed, preview],
     )
     refresh.click(
         refresh_lists,
