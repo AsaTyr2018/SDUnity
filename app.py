@@ -6,6 +6,8 @@ from PIL import Image
 
 from sdunity import presets, models, generator, gallery, config, civitai, bootcamp, tags
 
+MAX_THUMBNAILS = 20
+
 MODEL_DIR_MAP = {"sd15": "SD15", "sdxl": "SDXL", "ponyxl": "PonyXL"}
 
 # ---------------------------------------------------------------------------
@@ -47,6 +49,19 @@ css = """
     width: 254px !important;
     height: 254px !important;
 }
+
+#images {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, 128px);
+    gap: 4px;
+}
+#images img {
+    object-fit: contain;
+    width: 128px !important;
+    height: 128px !important;
+}
+"""
+
 
 #imagesgallery .thumbnail-item.thumbnail-lg {
     width: 128px !important;
@@ -260,15 +275,16 @@ with gr.Blocks(theme=theme, css=css) as demo:
 
         with gr.TabItem("Gallery"):
             with gr.Row():
-                with gr.Column(scale=2):
-                    gallery_grid = gr.Gallery(
-                        label="Images",
-                        show_label=True,
-                        elem_id="imagesgallery",
-                    )
+                with gr.Column(scale=2, elem_id="images"):
+                    gr.Markdown("**Images**")
+                    gallery_grid = [
+                        gr.Image(show_label=False, interactive=True)
+                        for _ in range(MAX_THUMBNAILS)
+                    ]
+
                     refresh_gallery = gr.Button("Refresh")
                 with gr.Column(scale=1):
-                    selected_image = gr.Image(label="Image")
+                    selected_image = gr.Image(label="Image", elem_id="image")
                     metadata = gr.JSON(label="Metadata")
                     delete_btn = gr.Button("Delete Selected")
                     delete_status = gr.Markdown()
@@ -277,13 +293,16 @@ with gr.Blocks(theme=theme, css=css) as demo:
 
             def _refresh_gallery():
                 paths = gallery.list_images()
-                items = [(p, os.path.basename(p)) for p in paths]
-                return items, paths, None, None, ""
+                updates = [
+                    gr.update(value=paths[i] if i < len(paths) else None)
+                    for i in range(MAX_THUMBNAILS)
+                ]
+                return updates + [paths[:MAX_THUMBNAILS], None, None, ""]
 
-            def _select_image(evt: gr.SelectData, paths):
-                if evt.index is None or evt.index >= len(paths):
+            def _select_image(index, paths):
+                if index is None or index >= len(paths):
                     return None, None, ""
-                path = paths[evt.index]
+                path = paths[index]
                 img = Image.open(path)
                 meta = gallery.load_metadata(path)
                 return img, meta, path
@@ -292,39 +311,30 @@ with gr.Blocks(theme=theme, css=css) as demo:
                 msg = "No image selected"
                 if path and gallery.delete_image(path):
                     msg = "Image deleted"
-                items, paths, _img, _meta, _ = _refresh_gallery()
-                return items, paths, None, None, msg, ""
+                res = _refresh_gallery()
+                return res[:-1] + [msg, ""]
 
             refresh_gallery.click(
                 _refresh_gallery,
-                outputs=[
-                    gallery_grid,
-                    gallery_state,
-                    selected_image,
-                    metadata,
-                    delete_status,
-                ],
+                outputs=gallery_grid
+                + [gallery_state, selected_image, metadata, delete_status],
             )
             demo.load(
                 _refresh_gallery,
-                outputs=[
-                    gallery_grid,
-                    gallery_state,
-                    selected_image,
-                    metadata,
-                    delete_status,
-                ],
+                outputs=gallery_grid
+                + [gallery_state, selected_image, metadata, delete_status],
             )
-            gallery_grid.select(
-                _select_image,
-                inputs=gallery_state,
-                outputs=[selected_image, metadata, selected_path],
-            )
+            for idx, img in enumerate(gallery_grid):
+                img.select(
+                    lambda _evt, paths, i=idx: _select_image(i, paths),
+                    inputs=gallery_state,
+                    outputs=[selected_image, metadata, selected_path],
+                )
             delete_btn.click(
                 _delete_image,
                 inputs=selected_path,
-                outputs=[
-                    gallery_grid,
+                outputs=gallery_grid
+                + [
                     gallery_state,
                     selected_image,
                     metadata,
