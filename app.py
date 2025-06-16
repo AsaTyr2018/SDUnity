@@ -283,7 +283,7 @@ with gr.Blocks(theme=theme, css=css) as demo:
                                 dest = os.path.join(dest_dir, filename)
                                 total = int(resp.headers.get("content-length", 0))
                                 downloaded = 0
-                                progress(0, desc=f"Downloading {filename}", total=total)
+                                progress((0, total), desc=f"Downloading {filename}")
                                 yield gr.update(value="Download running... 0%"), gr.update(value="0%")
                                 last_percent = 0
                                 with open(dest, "wb") as f:
@@ -294,17 +294,13 @@ with gr.Blocks(theme=theme, css=css) as demo:
                                         downloaded += len(chunk)
                                         if total:
                                             percent = int(downloaded / total * 100)
-                                            progress(
-                                                downloaded,
-                                                desc=f"Downloading {filename}",
-                                                total=total,
-                                            )
+                                            progress((downloaded, total), desc=f"Downloading {filename}")
                                             if percent - last_percent >= 5:
                                                 last_percent = percent
                                                 yield gr.update(
                                                     value=f"Download running... {percent}%"
                                                 ), gr.update(value=f"{percent}%")
-                                progress(total, desc="Download complete", total=total)
+                                progress((total, total), desc="Download complete")
                                 yield gr.update(value=f"Saved to {os.path.basename(dest)}"), gr.update(value="Done")
                                 return
                 yield gr.update(value="Model not found"), gr.update(value="")
