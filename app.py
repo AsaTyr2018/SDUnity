@@ -30,6 +30,24 @@ css = """
     height: 100% !important;
     object-fit: contain;
 }
+#download_popup {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+.download-popup-content {
+    background-color: #1e1e1e;
+    padding: 1em;
+    border-radius: 8px;
+    width: 300px;
+}
 """
 
 with gr.Blocks(theme=theme, css=css) as demo:
@@ -128,6 +146,10 @@ with gr.Blocks(theme=theme, css=css) as demo:
                     civitai_download = gr.Button("Download")
                     civitai_status = gr.Markdown(visible=False)
                     civitai_state = gr.State([])
+                    with gr.Group(elem_id="download_popup", visible=False) as download_popup:
+                        with gr.Column(elem_classes="download-popup-content"):
+                            popup_status = gr.Markdown()
+                            popup_close = gr.Button("Close")
 
         with gr.TabItem("Gallery"):
             with gr.Row():
@@ -175,6 +197,18 @@ with gr.Blocks(theme=theme, css=css) as demo:
                         return r.get("image")
                 return None
 
+            def _open_download_popup(name, t, state):
+                for r in state:
+                    if r["name"] == name:
+                        dest = os.path.join(config.MODELS_DIR, MODEL_DIR_MAP.get(t, t))
+                        filename = os.path.basename(r["downloadUrl"])
+                        msg = f"Downloading {filename} to {dest}..."
+                        return gr.update(visible=True), gr.update(value=msg)
+                return gr.update(visible=False), gr.update(value="Model not found")
+
+            def _close_download_popup():
+                return gr.update(visible=False)
+
             def _civitai_download(name, t, state, progress=gr.Progress()):
                 for r in state:
                     if r["name"] == name:
@@ -183,9 +217,9 @@ with gr.Blocks(theme=theme, css=css) as demo:
                             path = civitai.download_model(r["downloadUrl"], dest, progress=progress)
                         except Exception as e:
                             print("Civitai download failed:", e)
-                            return gr.update(value=f"Download failed: {e}", visible=True)
-                        return gr.update(value=f"Saved to {os.path.basename(path)}", visible=True)
-                return gr.update(value="Model not found", visible=True)
+                            return gr.update(value=f"Download failed: {e}")
+                        return gr.update(value=f"Saved to {os.path.basename(path)}")
+                return gr.update(value="Model not found")
 
         with gr.TabItem("Settings"):
             settings_inputs = []
@@ -285,10 +319,15 @@ with gr.Blocks(theme=theme, css=css) as demo:
         outputs=civitai_preview,
     )
     civitai_download.click(
+        _open_download_popup,
+        inputs=[civitai_results, civitai_type, civitai_state],
+        outputs=[download_popup, popup_status],
+    ).then(
         _civitai_download,
         inputs=[civitai_results, civitai_type, civitai_state],
-        outputs=civitai_status,
+        outputs=popup_status,
     )
+    popup_close.click(_close_download_popup, outputs=download_popup)
 
 if __name__ == "__main__":
     # Launch Gradio using settings from config for easier customization
