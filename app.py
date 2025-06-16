@@ -126,6 +126,7 @@ with gr.Blocks(theme=theme, css=css) as demo:
                     civitai_results = gr.Dropdown(label="Results")
                     civitai_preview = gr.Image(label="Preview")
                     civitai_download = gr.Button("Download")
+                    civitai_status = gr.Markdown(visible=False)
                     civitai_state = gr.State([])
 
         with gr.TabItem("Gallery"):
@@ -163,6 +164,7 @@ with gr.Blocks(theme=theme, css=css) as demo:
                     gr.update(choices=names, value=names[0] if names else None),
                     results,
                     img,
+                    gr.update(value="", visible=False),
                 )
 
             def _civitai_preview(name, state):
@@ -177,9 +179,13 @@ with gr.Blocks(theme=theme, css=css) as demo:
                 for r in state:
                     if r["name"] == name:
                         dest = os.path.join(config.MODELS_DIR, MODEL_DIR_MAP.get(t, t))
-                        civitai.download_model(r["downloadUrl"], dest, progress=progress)
-                        break
-                return "Downloaded"
+                        try:
+                            path = civitai.download_model(r["downloadUrl"], dest, progress=progress)
+                        except Exception as e:
+                            print("Civitai download failed:", e)
+                            return gr.update(value=f"Download failed: {e}", visible=True)
+                        return gr.update(value=f"Saved to {os.path.basename(path)}", visible=True)
+                return gr.update(value="Model not found", visible=True)
 
         with gr.TabItem("Settings"):
             settings_inputs = []
@@ -271,7 +277,7 @@ with gr.Blocks(theme=theme, css=css) as demo:
     civitai_search.click(
         _civitai_search,
         inputs=[civitai_query, civitai_type, civitai_sort],
-        outputs=[civitai_results, civitai_state, civitai_preview],
+        outputs=[civitai_results, civitai_state, civitai_preview, civitai_status],
     )
     civitai_results.change(
         _civitai_preview,
@@ -281,7 +287,7 @@ with gr.Blocks(theme=theme, css=css) as demo:
     civitai_download.click(
         _civitai_download,
         inputs=[civitai_results, civitai_type, civitai_state],
-        outputs=None,
+        outputs=civitai_status,
     )
 
 if __name__ == "__main__":
