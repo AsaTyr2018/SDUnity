@@ -2,11 +2,12 @@
 
 **SDUnity** is a self‑hosted web interface built with [Gradio](https://www.gradio.app/) for working with Stable Diffusion models. The application brings model management, LoRA handling and an image gallery together under a single UI.
 
-The interface uses a modern dark theme and is divided into four main tabs:
+The interface uses a modern dark theme and is divided into five main tabs:
 
 - **Generation** – create images from text prompts
 - **Model Manager** – browse models and LoRAs or search Civitai
 - **Gallery** – view previous generations
+- **Bootcamp** – LoRA training (work in progress)
 - **Settings** – configure persistent options
 
 ## Features
@@ -29,6 +30,9 @@ The interface uses a modern dark theme and is divided into four main tabs:
 ### Web Gallery
 - Browse all saved images from `generations/`
 - Display metadata such as prompt, model, LoRA and seed
+
+### Bootcamp (WIP)
+- Simple interface to launch LoRA training using the diffusers DreamBooth script
 
 ## Built‑in Models
 

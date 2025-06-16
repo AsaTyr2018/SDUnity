@@ -3,7 +3,7 @@ import sys
 import gradio as gr
 from PIL import Image
 
-from sdunity import presets, models, generator, gallery, config, civitai
+from sdunity import presets, models, generator, gallery, config, civitai, bootcamp
 
 MODEL_DIR_MAP = {"sd15": "SD15", "sdxl": "SDXL", "ponyxl": "PonyXL"}
 
@@ -221,6 +221,17 @@ with gr.Blocks(theme=theme, css=css) as demo:
                         return gr.update(value=f"Saved to {os.path.basename(path)}")
                 return gr.update(value="Model not found")
 
+        with gr.TabItem("Bootcamp"):
+            with gr.Row():
+                with gr.Column(scale=1):
+                    bc_instance = gr.Textbox(label="Instance Images", value="data/instance")
+                    bc_model = gr.Textbox(label="Base Model", value="")
+                    bc_output = gr.Textbox(label="Output Directory", value="loras/bootcamp")
+                    bc_steps = gr.Number(label="Steps", value=1000, precision=0)
+                    bc_lr = gr.Number(label="Learning Rate", value=1e-4)
+                    bc_start = gr.Button("Start Bootcamp", variant="primary")
+                bc_log = gr.Markdown()
+
         with gr.TabItem("Settings"):
             settings_inputs = []
             civitai_key = gr.Textbox(
@@ -306,6 +317,12 @@ with gr.Blocks(theme=theme, css=css) as demo:
         ),
         inputs=model_category,
         outputs=model,
+    )
+
+    bc_start.click(
+        bootcamp.train_lora,
+        inputs=[bc_instance, bc_model, bc_output, bc_steps, bc_lr],
+        outputs=bc_log,
     )
 
     civitai_search.click(
