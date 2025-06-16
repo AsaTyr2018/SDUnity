@@ -230,15 +230,23 @@ with gr.Blocks(theme=theme, css=css) as demo:
                         file_count="multiple",
                         label="Model Files",
                     )
+                    model_move_target = gr.Dropdown(
+                        choices=models.list_categories(), label="Move To"
+                    )
+                    move_model_btn = gr.Button("Move Selected")
                     remove_model_btn = gr.Button("Remove Selected")
                     remove_status = gr.Markdown()
                 with gr.TabItem("LoRAs"):
-                    gr.FileExplorer(
+                    lora_browser = gr.FileExplorer(
                         root_dir=config.LORA_DIR,
                         glob="**/*.safetensors",
                         file_count="multiple",
                         label="LoRA Files",
                     )
+                    lora_move_target = gr.Textbox(label="Move To (Category)")
+                    move_lora_btn = gr.Button("Move Selected")
+                    remove_lora_btn = gr.Button("Remove Selected")
+                    lora_status = gr.Markdown()
 
                 with gr.TabItem("Civitai Browser"):
                     with gr.Row():
@@ -489,7 +497,7 @@ with gr.Blocks(theme=theme, css=css) as demo:
             def _remove_models(paths, current_cat):
                 if not paths:
                     cat, mdl, lora_list = models.refresh_lists(current_cat)
-                    return cat, mdl, lora_list, "No files selected"
+                    return cat, mdl, lora_list, "No files selected", gr.update(choices=models.list_categories())
                 removed = 0
                 if isinstance(paths, str):
                     paths = [paths]
@@ -498,7 +506,73 @@ with gr.Blocks(theme=theme, css=css) as demo:
                     if models.remove_model_file(name):
                         removed += 1
                 cat_upd, model_upd, lora_upd = models.refresh_lists(current_cat)
+                return (
+                    cat_upd,
+                    model_upd,
+                    lora_upd,
+                    f"Removed {removed} file(s)",
+                    gr.update(choices=models.list_categories(), value=current_cat),
+                )
+
+            def _move_models(paths, dest_cat, current_cat):
+                if not paths or not dest_cat:
+                    cat, mdl, lora_list = models.refresh_lists(current_cat)
+                    return (
+                        cat,
+                        mdl,
+                        lora_list,
+                        "No files selected",
+                        gr.update(choices=models.list_categories()),
+                    )
+                moved = 0
+                if isinstance(paths, str):
+                    paths = [paths]
+                for p in paths:
+                    name = os.path.basename(p)
+                    try:
+                        models.move_model_file(name, dest_cat, current_category=current_cat)
+                        moved += 1
+                    except FileNotFoundError:
+                        pass
+                cat_upd, model_upd, lora_upd = models.refresh_lists(current_cat)
+                return (
+                    cat_upd,
+                    model_upd,
+                    lora_upd,
+                    f"Moved {moved} file(s)",
+                    gr.update(choices=models.list_categories(), value=dest_cat),
+                )
+
+            def _remove_loras(paths):
+                if not paths:
+                    cat, mdl, lora_list = models.refresh_lists()
+                    return cat, mdl, lora_list, "No files selected"
+                removed = 0
+                if isinstance(paths, str):
+                    paths = [paths]
+                for p in paths:
+                    name = os.path.basename(p)
+                    if models.remove_lora_file(name):
+                        removed += 1
+                cat_upd, model_upd, lora_upd = models.refresh_lists()
                 return cat_upd, model_upd, lora_upd, f"Removed {removed} file(s)"
+
+            def _move_loras(paths, dest_cat):
+                if not paths or not dest_cat:
+                    cat, mdl, lora_list = models.refresh_lists()
+                    return cat, mdl, lora_list, "No files selected"
+                moved = 0
+                if isinstance(paths, str):
+                    paths = [paths]
+                for p in paths:
+                    name = os.path.basename(p)
+                    try:
+                        models.move_lora_file(name, dest_cat)
+                        moved += 1
+                    except FileNotFoundError:
+                        pass
+                cat_upd, model_upd, lora_upd = models.refresh_lists()
+                return cat_upd, model_upd, lora_upd, f"Moved {moved} file(s)"
 
             def _load_model(cat, name, loaded):
                 if not name:
@@ -724,7 +798,22 @@ with gr.Blocks(theme=theme, css=css) as demo:
     remove_model_btn.click(
         _remove_models,
         inputs=[model_browser, model_category],
-        outputs=[model_category, model, lora, remove_status],
+        outputs=[model_category, model, lora, remove_status, model_move_target],
+    )
+    move_model_btn.click(
+        _move_models,
+        inputs=[model_browser, model_move_target, model_category],
+        outputs=[model_category, model, lora, remove_status, model_move_target],
+    )
+    remove_lora_btn.click(
+        _remove_loras,
+        inputs=lora_browser,
+        outputs=[model_category, model, lora, lora_status],
+    )
+    move_lora_btn.click(
+        _move_loras,
+        inputs=[lora_browser, lora_move_target],
+        outputs=[model_category, model, lora, lora_status],
     )
 
     load_btn.click(

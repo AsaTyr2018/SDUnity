@@ -18,6 +18,19 @@ def build_model_lookup() -> dict:
 
 MODEL_LOOKUP = build_model_lookup()
 
+
+def build_lora_lookup() -> dict:
+    lookup = {}
+    if os.path.isdir(config.LORA_DIR):
+        for root, _dirs, files in os.walk(config.LORA_DIR):
+            for f in files:
+                if f.lower().endswith(".safetensors"):
+                    lookup[f] = os.path.join(root, f)
+    return lookup
+
+
+LORA_LOOKUP = build_lora_lookup()
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -29,6 +42,17 @@ def _model_category(model_name: str) -> Optional[str]:
         return None
     parent = os.path.dirname(path)
     root = os.path.abspath(config.MODELS_DIR)
+    if os.path.abspath(parent) == root:
+        return "Uncategorized"
+    return os.path.relpath(parent, root)
+
+
+def _lora_category(lora_name: str) -> Optional[str]:
+    path = LORA_LOOKUP.get(lora_name)
+    if not path:
+        return None
+    parent = os.path.dirname(path)
+    root = os.path.abspath(config.LORA_DIR)
     if os.path.abspath(parent) == root:
         return "Uncategorized"
     return os.path.relpath(parent, root)
@@ -116,18 +140,47 @@ def list_models(category=None) -> list:
     return sorted(names)
 
 
-def list_loras() -> list:
-    if not os.path.isdir(config.LORA_DIR):
-        return []
-    return [f for f in os.listdir(config.LORA_DIR) if f.lower().endswith(".safetensors")]
+def list_lora_categories() -> list:
+    cats = set()
+    if os.path.isdir(config.LORA_DIR):
+        for fname in os.listdir(config.LORA_DIR):
+            path = os.path.join(config.LORA_DIR, fname)
+            if os.path.isdir(path):
+                cats.add(fname)
+            elif fname.lower().endswith(".safetensors"):
+                cats.add("Uncategorized")
+    return sorted(cats)
+
+
+def list_loras(category: str | None = None) -> list:
+    names = []
+    cat_dir = os.path.join(config.LORA_DIR, category) if category else None
+    if cat_dir and os.path.isdir(cat_dir):
+        for fname in os.listdir(cat_dir):
+            if fname.lower().endswith(".safetensors"):
+                if fname not in names:
+                    names.append(fname)
+    if category == "Uncategorized" and os.path.isdir(config.LORA_DIR):
+        for fname in os.listdir(config.LORA_DIR):
+            path = os.path.join(config.LORA_DIR, fname)
+            if os.path.isfile(path) and fname.lower().endswith(".safetensors"):
+                names.append(fname)
+    if category is None:
+        # return all loras
+        for root, _dirs, files in os.walk(config.LORA_DIR):
+            for f in files:
+                if f.lower().endswith(".safetensors") and f not in names:
+                    names.append(f)
+    return sorted(names)
 
 
 
 def refresh_lists(selected_category=None):
     from gradio import update
 
-    global MODEL_LOOKUP
+    global MODEL_LOOKUP, LORA_LOOKUP
     MODEL_LOOKUP = build_model_lookup()
+    LORA_LOOKUP = build_lora_lookup()
     categories = list_categories()
     if selected_category not in categories:
         selected_category = categories[0] if categories else None
@@ -231,6 +284,53 @@ def move_model_file(
     for backend in BACKENDS.values():
         backend.pipelines.pop(model_name, None)
 
+    return dest
+
+
+def remove_lora_file(lora_name: str, category: Optional[str] = None) -> bool:
+    if category is None:
+        category = _lora_category(lora_name)
+
+    path = LORA_LOOKUP.get(lora_name)
+    if category and not path:
+        path = os.path.join(config.LORA_DIR, category, lora_name)
+
+    if not path or not os.path.isfile(path):
+        return False
+
+    try:
+        os.remove(path)
+    finally:
+        if lora_name in LORA_LOOKUP:
+            del LORA_LOOKUP[lora_name]
+    return True
+
+
+def move_lora_file(
+    lora_name: str,
+    new_category: str,
+    current_category: Optional[str] = None,
+) -> str:
+    if current_category is None:
+        current_category = _lora_category(lora_name)
+
+    src = LORA_LOOKUP.get(lora_name)
+    if current_category and not src:
+        src = os.path.join(config.LORA_DIR, current_category, lora_name)
+
+    if not src or not os.path.isfile(src):
+        raise FileNotFoundError(lora_name)
+
+    dest_dir = os.path.join(config.LORA_DIR, new_category)
+    os.makedirs(dest_dir, exist_ok=True)
+    dest = os.path.join(dest_dir, lora_name)
+
+    if os.path.abspath(src) == os.path.abspath(dest):
+        return dest
+
+    os.rename(src, dest)
+
+    LORA_LOOKUP[lora_name] = dest
     return dest
 
 
