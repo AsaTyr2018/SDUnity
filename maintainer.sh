@@ -49,13 +49,13 @@ fix_permissions() {
 
 install_sdunity() {
     check_deps
-    ensure_venv
     if [ -d "$TARGET_DIR/.git" ]; then
         echo "SDUnity already installed in $TARGET_DIR"
     else
         echo "Cloning SDUnity into $TARGET_DIR"
         git clone "$REPO_URL" "$TARGET_DIR"
     fi
+    ensure_venv
     "$VENV_DIR/bin/pip" install -r "$TARGET_DIR/requirements.txt"
     fix_permissions
     echo "Installation completed."
