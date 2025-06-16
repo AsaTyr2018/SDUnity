@@ -120,10 +120,10 @@ with gr.Blocks(theme=theme) as demo:
             model,
             lora,
             nsfw_filter,
-            smooth_preview_chk,
             images_per_batch,
             batch_count,
             preset,
+            smooth_preview_chk,
         ],
         outputs=[output, seed, preview],
     )
