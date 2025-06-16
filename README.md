@@ -75,3 +75,16 @@ python scripts/civitai_download.py <download_url> [destination] --api-key YOUR_K
 The interface runs on `http://localhost:7860/` by default. Gradio launch options can be adjusted from the Settings tab or by editing `sdunity/config.py` under `GRADIO_LAUNCH_CONFIG`.
 
 Prompt presets live in `presets.txt` and can be selected from the dropdown in the Generation tab.
+
+## Maintainer Script
+
+For a fully automated setup you can use `maintainer.sh` which supports
+`install`, `update` and `uninstall` commands. Run the script with `sudo`:
+
+```bash
+sudo ./maintainer.sh install    # install SDUnity under /opt/SDUnity
+sudo ./maintainer.sh update     # pull latest changes and upgrade deps
+sudo ./maintainer.sh uninstall  # remove the installed files
+```
+
+The script depends on `git`, `python3` and `pip3` being available.
