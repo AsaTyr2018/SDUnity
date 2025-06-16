@@ -130,4 +130,4 @@ def generate_image(
 
     last_img = images[-1] if images else None
 
-    yield last_img, seed, gr.update(visible=False)
+    yield last_img, seed, gr.update(visible=True)
