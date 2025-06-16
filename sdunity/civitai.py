@@ -82,7 +82,7 @@ def download_model(download_url: str, dest_dir: str, progress=None) -> str:
     dest = os.path.join(dest_dir, filename)
     total = int(resp.headers.get("content-length", 0))
     downloaded = 0
-    if progress:
+    if progress is not None:
         progress(0, desc=f"Downloading {filename}", total=total)
     with open(dest, "wb") as f:
         for chunk in resp.iter_content(chunk_size=8192):
@@ -90,8 +90,8 @@ def download_model(download_url: str, dest_dir: str, progress=None) -> str:
                 continue
             f.write(chunk)
             downloaded += len(chunk)
-            if progress and total:
+            if progress is not None and total:
                 progress(downloaded, desc=f"Downloading {filename}", total=total)
-    if progress:
+    if progress is not None:
         progress(total, desc="Download complete", total=total)
     return dest
