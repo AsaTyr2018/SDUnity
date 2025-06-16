@@ -1,5 +1,6 @@
 import os
 import sys
+import requests
 import gradio as gr
 from PIL import Image
 
@@ -216,14 +217,53 @@ with gr.Blocks(theme=theme, css=css) as demo:
             def _civitai_download(name, t, state, progress=gr.Progress()):
                 for r in state:
                     if r["name"] == name:
-                        dest = os.path.join(config.MODELS_DIR, MODEL_DIR_MAP.get(t, t))
+                        dest_dir = os.path.join(
+                            config.MODELS_DIR, MODEL_DIR_MAP.get(t, t)
+                        )
+                        os.makedirs(dest_dir, exist_ok=True)
+                        url = r["downloadUrl"]
                         try:
-                            path = civitai.download_model(r["downloadUrl"], dest, progress=progress)
-                        except Exception as e:
+                            resp = requests.get(
+                                url,
+                                stream=True,
+                                timeout=60,
+                                headers=civitai._headers(),
+                            )
+                            resp.raise_for_status()
+                        except Exception as e:  # pragma: no cover - network
                             print("Civitai download failed:", e)
-                            return gr.update(value=f"Download failed: {e}")
-                        return gr.update(value=f"Saved to {os.path.basename(path)}")
-                return gr.update(value="Model not found")
+                            yield gr.update(value=f"Download failed: {e}")
+                            return
+
+                        filename = civitai._extract_filename(resp, url)
+                        dest = os.path.join(dest_dir, filename)
+                        total = int(resp.headers.get("content-length", 0))
+                        downloaded = 0
+                        progress(0, desc=f"Downloading {filename}", total=total)
+                        yield gr.update(value="Download running... 0%")
+                        last_percent = 0
+                        with open(dest, "wb") as f:
+                            for chunk in resp.iter_content(chunk_size=8192):
+                                if not chunk:
+                                    continue
+                                f.write(chunk)
+                                downloaded += len(chunk)
+                                if total:
+                                    percent = int(downloaded / total * 100)
+                                    progress(
+                                        downloaded,
+                                        desc=f"Downloading {filename}",
+                                        total=total,
+                                    )
+                                    if percent - last_percent >= 5:
+                                        last_percent = percent
+                                        yield gr.update(
+                                            value=f"Download running... {percent}%"
+                                        )
+                        progress(total, desc="Download complete", total=total)
+                        yield gr.update(value=f"Saved to {os.path.basename(dest)}")
+                        return
+                yield gr.update(value="Model not found")
 
             def _remove_models(paths, current_cat):
                 if not paths:
