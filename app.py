@@ -6,7 +6,7 @@ from PIL import Image
 
 from sdunity import presets, models, generator, gallery, config, civitai, bootcamp, tags
 
-MAX_THUMBNAILS = 12
+MAX_THUMBNAILS = 50
 
 # Keep a master list of gallery image paths so that select callbacks
 # can access the full set without relying on Gradio to pass state.
