@@ -22,7 +22,7 @@ The interface uses a modern dark theme and is divided into five main tabs:
 - Selectable prompt presets
 
 ### Model Management
-- Choose between predefined models or any files in `models/`
+- Choose from any files in `models/`
 - LoRA dropdown lists files from `loras/` with multi‑select support
 - Built‑in Civitai browser to search, inspect metadata and download model versions
 - Move or delete model files from within the manager
@@ -34,15 +34,6 @@ The interface uses a modern dark theme and is divided into five main tabs:
 ### Bootcamp (WIP)
 - Simple interface to launch LoRA training using the diffusers DreamBooth script
 
-## Built‑in Models
-
-Example checkpoints are defined in `config/model_registry.json`. Download them with:
-
-```bash
-python scripts/download_models.py
-```
-
-Any `.safetensors` or `.ckpt` files placed in `models/` are detected automatically.
 
 ### Command line Civitai download
 
@@ -54,25 +45,20 @@ python scripts/civitai_download.py <download_url> [destination] --api-key YOUR_K
 
 ## Setup
 
-1. Create a virtual environment and install dependencies:
-   ```bash
-   python3 -m venv venv
-   source venv/bin/activate
-   pip install -r requirements.txt
-   ```
-2. (Optional) analyse an image folder:
-   ```bash
-   python scripts/analyze_data.py path/to/images
-   ```
-3. Create folders for models and LoRAs and download the predefined checkpoints:
-   ```bash
-   mkdir -p models loras
-   python scripts/download_models.py
-   ```
-4. Launch the app using the helper script:
-   ```bash
-   ./start.sh
-   ```
+Clone the repository and run the maintainer script which installs SDUnity under
+`/opt/SDUnity` with its own virtual environment:
+
+```bash
+git clone https://github.com/AsaTyr2018/SDUnity.git
+cd SDUnity
+sudo ./maintainer.sh install
+```
+
+Start the web interface with:
+
+```bash
+/opt/SDUnity/start.sh
+```
 
 The interface runs on `http://localhost:7860/` by default. Gradio launch options can be adjusted from the Settings tab or by editing `sdunity/config.py` under `GRADIO_LAUNCH_CONFIG`.
 
@@ -80,14 +66,7 @@ Prompt presets live in `presets.txt` and can be selected from the dropdown in th
 
 ## Maintainer Script
 
-For a fully automated setup you can use `maintainer.sh` which supports
-`install`, `update` and `uninstall` commands. The script manages its own
-virtual environment under `/opt/SDUnity/venv`. Run it with `sudo`:
-
-```bash
-sudo ./maintainer.sh install    # install SDUnity under /opt/SDUnity
-sudo ./maintainer.sh update     # pull latest changes and upgrade deps
-sudo ./maintainer.sh uninstall  # remove the installed files
-```
-
-The script depends on `git` and `python3` being available.
+The `maintainer.sh` script also handles updates and removal. Run it with
+`sudo` followed by `install`, `update` or `uninstall`. It manages its own
+virtual environment under `/opt/SDUnity/venv` and requires `git` and
+`python3` to be available.

@@ -1,6 +1,4 @@
 import os
-import json
-import requests
 import torch
 from diffusers import StableDiffusionPipeline, StableDiffusionXLPipeline
 from typing import Optional
@@ -8,23 +6,8 @@ from typing import Optional
 from . import config
 
 
-def load_model_registry(path: str = config.MODEL_REGISTRY_PATH) -> dict:
-    if not os.path.isfile(path):
-        return {}
-    with open(path, "r", encoding="utf-8") as f:
-        return json.load(f)
-
-
-MODEL_REGISTRY = load_model_registry()
-
-
 def build_model_lookup() -> dict:
     lookup = {}
-    for category, models in MODEL_REGISTRY.items():
-        for _name, info in models.items():
-            filename = os.path.basename(info.get("url", ""))
-            if filename:
-                lookup[filename] = os.path.join(config.MODELS_DIR, category, filename)
     if os.path.isdir(config.MODELS_DIR):
         for root, _dirs, files in os.walk(config.MODELS_DIR):
             for f in files:
@@ -34,6 +17,21 @@ def build_model_lookup() -> dict:
 
 
 MODEL_LOOKUP = build_model_lookup()
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+def _model_category(model_name: str) -> Optional[str]:
+    """Return the category directory for a model name."""
+    path = MODEL_LOOKUP.get(model_name)
+    if not path:
+        return None
+    parent = os.path.dirname(path)
+    root = os.path.abspath(config.MODELS_DIR)
+    if os.path.abspath(parent) == root:
+        return "Uncategorized"
+    return os.path.relpath(parent, root)
 
 # Cache for backend instances indexed by category
 BACKENDS = {}
@@ -54,11 +52,7 @@ class BaseBackend:
         if model_name not in self.pipelines:
             repo = MODEL_LOOKUP.get(model_name)
             if not repo or not os.path.isfile(repo):
-                try:
-                    repo = download_model_file(model_name, progress=progress)
-                    MODEL_LOOKUP[model_name] = repo
-                except Exception as e:
-                    raise ValueError(f"Unknown model: {model_name}") from e
+                raise ValueError(f"Unknown model: {model_name}")
 
             pipe = self.build_pipeline(repo)
             device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -92,57 +86,10 @@ def get_backend(category: str) -> BaseBackend:
     return BACKENDS[key]
 
 
-def _find_model_info(model_name: str):
-    for category, models in MODEL_REGISTRY.items():
-        for _name, info in models.items():
-            if os.path.basename(info.get("url", "")) == model_name:
-                return category, info
-    return None, None
-
-
-def download_model_file(model_name: str, progress=None) -> str:
-    category, info = _find_model_info(model_name)
-    if not info:
-        raise ValueError(f"Unknown model: {model_name}")
-
-    url = info.get("url")
-    if not url:
-        raise ValueError(f"No download URL for model: {model_name}")
-
-    dest_dir = os.path.join(config.MODELS_DIR, category)
-    os.makedirs(dest_dir, exist_ok=True)
-    dest = os.path.join(dest_dir, os.path.basename(url))
-
-    if os.path.isfile(dest) and os.path.getsize(dest) > 0:
-        return dest
-
-    print(f"Downloading {model_name} from {url}")
-    try:
-        resp = requests.get(url, stream=True)
-        resp.raise_for_status()
-        total = int(resp.headers.get("content-length", 0))
-        downloaded = 0
-        if progress:
-            progress((0, total), desc=f"Downloading {model_name}")
-        with open(dest, "wb") as f:
-            for chunk in resp.iter_content(chunk_size=8192):
-                if not chunk:
-                    continue
-                f.write(chunk)
-                downloaded += len(chunk)
-                if progress and total:
-                    progress((downloaded, total), desc=f"Downloading {model_name}")
-        if progress:
-            progress((total, total), desc="Download complete")
-    except Exception as e:
-        if os.path.exists(dest):
-            os.remove(dest)
-        raise RuntimeError(f"Failed to download {url}: {e}") from e
-    return dest
 
 
 def list_categories() -> list:
-    cats = set(MODEL_REGISTRY.keys())
+    cats = set()
     if os.path.isdir(config.MODELS_DIR):
         for fname in os.listdir(config.MODELS_DIR):
             path = os.path.join(config.MODELS_DIR, fname)
@@ -155,11 +102,6 @@ def list_categories() -> list:
 
 def list_models(category=None) -> list:
     names = []
-    if category in MODEL_REGISTRY:
-        for _name, info in MODEL_REGISTRY[category].items():
-            filename = os.path.basename(info.get("url", ""))
-            if filename:
-                names.append(filename)
     cat_dir = os.path.join(config.MODELS_DIR, category) if category else None
     if cat_dir and os.path.isdir(cat_dir):
         for fname in os.listdir(cat_dir):
@@ -201,7 +143,7 @@ def refresh_lists(selected_category=None):
 def get_pipeline(model_name: str, progress=None, category: Optional[str] = None):
     """Return a cached pipeline for the given model using its category."""
     if category is None:
-        category, _info = _find_model_info(model_name)
+        category = _model_category(model_name)
     backend = get_backend(category)
     return backend.get_pipeline(model_name, progress=progress)
 
@@ -224,7 +166,7 @@ def remove_model_file(model_name: str, category: Optional[str] = None) -> bool:
     """
 
     if category is None:
-        category, _info = _find_model_info(model_name)
+        category = _model_category(model_name)
 
     path = MODEL_LOOKUP.get(model_name)
     if category and not path:
@@ -267,7 +209,7 @@ def move_model_file(
     """
 
     if current_category is None:
-        current_category, _info = _find_model_info(model_name)
+        current_category = _model_category(model_name)
 
     src = MODEL_LOOKUP.get(model_name)
     if current_category and not src:

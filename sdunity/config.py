@@ -4,7 +4,6 @@ import json
 # Directory paths
 MODELS_DIR = "models"
 LORA_DIR = "loras"
-MODEL_REGISTRY_PATH = os.path.join("config", "model_registry.json")
 GENERATIONS_DIR = "generations"
 
 # Ensure generations directory exists
