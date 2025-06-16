@@ -265,6 +265,10 @@ def generate_image(
     if seed is None:
         seed = random.randint(0, 2**32 - 1)
 
+    # ensure we generate at least one image
+    images_per_batch = max(1, int(images_per_batch))
+    batch_count = max(1, int(batch_count))
+
     if preset:
         enhancement = PRESETS.get(preset)
         if enhancement:
@@ -409,8 +413,8 @@ with gr.Blocks(theme=theme) as demo:
                         height = gr.Slider(64, 1024, value=256, step=64, label="Height")
                         nsfw_filter = gr.Checkbox(label="NSFW Filter", value=True)
                         smooth_preview_chk = gr.Checkbox(label="Smooth Preview", value=False)
-                        images_per_batch = gr.Number(label="Images per Batch", value=1, precision=0)
-                        batch_count = gr.Number(label="Batch Count", value=1, precision=0)
+                        images_per_batch = gr.Number(label="Images per Batch", value=1, precision=0, minimum=1)
+                        batch_count = gr.Number(label="Batch Count", value=1, precision=0, minimum=1)
 
             with gr.Row():
                 output = gr.Image(label="Result")
