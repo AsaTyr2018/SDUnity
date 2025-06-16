@@ -123,7 +123,7 @@ def download_model_file(model_name: str, progress=None) -> str:
         total = int(resp.headers.get("content-length", 0))
         downloaded = 0
         if progress:
-            progress(0, desc=f"Downloading {model_name}", total=total)
+            progress((0, total), desc=f"Downloading {model_name}")
         with open(dest, "wb") as f:
             for chunk in resp.iter_content(chunk_size=8192):
                 if not chunk:
@@ -131,9 +131,9 @@ def download_model_file(model_name: str, progress=None) -> str:
                 f.write(chunk)
                 downloaded += len(chunk)
                 if progress and total:
-                    progress(downloaded, desc=f"Downloading {model_name}", total=total)
+                    progress((downloaded, total), desc=f"Downloading {model_name}")
         if progress:
-            progress(total, desc="Download complete", total=total)
+            progress((total, total), desc="Download complete")
     except Exception as e:
         if os.path.exists(dest):
             os.remove(dest)
