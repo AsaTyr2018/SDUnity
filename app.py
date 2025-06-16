@@ -81,6 +81,8 @@ with gr.Blocks(theme=theme, css=css) as demo:
                     height=768,
                     elem_id="preview",
                 )
+            with gr.Row():
+                gen_gallery = gr.Gallery(label="Current Batch", show_label=True)
 
         with gr.TabItem("Generation Settings"):
             seed = gr.Number(label="Seed", value=None, precision=0)
@@ -417,7 +419,7 @@ with gr.Blocks(theme=theme, css=css) as demo:
             preset,
             smooth_preview_chk,
         ],
-        outputs=[output, seed],
+        outputs=[output, seed, gen_gallery],
     )
     refresh.click(
         models.refresh_lists,
