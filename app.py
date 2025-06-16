@@ -6,7 +6,7 @@ from PIL import Image
 
 from sdunity import presets, models, generator, gallery, config, civitai, bootcamp, tags
 
-MAX_THUMBNAILS = 20
+MAX_THUMBNAILS = 12
 
 # Keep a master list of gallery image paths so that select callbacks
 # can access the full set without relying on Gradio to pass state.
@@ -280,13 +280,18 @@ with gr.Blocks(theme=theme, css=css) as demo:
                 with gr.Column(scale=2, elem_id="images"):
                     gr.Markdown("**Images**")
                     gallery_grid = [
-                        gr.Image(show_label=False, interactive=True)
+                        gr.Image(
+                            show_label=False,
+                            interactive=True,
+                            sources=[],
+                            visible=False,
+                        )
                         for _ in range(MAX_THUMBNAILS)
                     ]
 
                     refresh_gallery = gr.Button("Refresh")
                 with gr.Column(scale=1):
-                    selected_image = gr.Image(label="Image", elem_id="image")
+                    selected_image = gr.Image(label="Image", elem_id="big_image")
                     metadata = gr.JSON(label="Metadata")
                     delete_btn = gr.Button("Delete Selected")
                     delete_status = gr.Markdown()
@@ -297,10 +302,12 @@ with gr.Blocks(theme=theme, css=css) as demo:
                 global GALLERY_PATHS
                 paths = gallery.list_images()
                 GALLERY_PATHS = paths
-                updates = [
-                    gr.update(value=paths[i] if i < len(paths) else None)
-                    for i in range(MAX_THUMBNAILS)
-                ]
+                updates = []
+                for i in range(MAX_THUMBNAILS):
+                    if i < len(paths):
+                        updates.append(gr.update(value=paths[i], visible=True))
+                    else:
+                        updates.append(gr.update(value=None, visible=False))
                 return updates + [paths[:MAX_THUMBNAILS], None, None, ""]
 
             def _select_image(index: int):
