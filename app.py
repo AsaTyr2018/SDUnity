@@ -31,6 +31,22 @@ css = """
     height: 100% !important;
     object-fit: contain;
 }
+#gengallery {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+}
+#gengallery .gallery-item {
+    flex: 0 0 auto;
+    width: 254px !important;
+    height: 254px !important;
+    margin-right: 4px;
+}
+#gengallery img {
+    object-fit: contain;
+    width: 254px !important;
+    height: 254px !important;
+}
 """
 
 with gr.Blocks(theme=theme, css=css) as demo:
@@ -81,12 +97,18 @@ with gr.Blocks(theme=theme, css=css) as demo:
                 output = gr.Image(
                     label="Result",
                     visible=True,
-                    width=768,
-                    height=768,
+                    width=384,
+                    height=384,
                     elem_id="preview",
                 )
             with gr.Row():
-                gen_gallery = gr.Gallery(label="Current Batch", show_label=True)
+                gen_gallery = gr.Gallery(
+                    label="Current Batch",
+                    show_label=True,
+                    columns=[5],
+                    elem_id="gengallery",
+                )
+                gen_gallery_state = gr.State([])
 
         with gr.TabItem("Generation Settings"):
             with gr.Row():
@@ -575,7 +597,7 @@ with gr.Blocks(theme=theme, css=css) as demo:
             preset,
             smooth_preview_chk,
         ],
-        outputs=[output, seed, gen_gallery],
+        outputs=[output, seed, gen_gallery, gen_gallery_state],
     )
     refresh.click(
         models.refresh_lists,
@@ -602,6 +624,22 @@ with gr.Blocks(theme=theme, css=css) as demo:
         _apply_tag,
         inputs=[prompt, tag_suggestions],
         outputs=[prompt, tag_suggestions],
+    )
+
+    def _select_gen_image(evt: gr.SelectData, paths):
+        if evt.index is None or evt.index >= len(paths):
+            return None
+        path = paths[evt.index]
+        try:
+            img = Image.open(path)
+        except Exception:
+            img = None
+        return img
+
+    gen_gallery.select(
+        _select_gen_image,
+        inputs=gen_gallery_state,
+        outputs=output,
     )
 
     civitai_search.click(
