@@ -20,7 +20,15 @@ theme = gr.themes.Monochrome(primary_hue="slate").set(
     input_background_fill_dark="#222222",
 )
 
-with gr.Blocks(theme=theme) as demo:
+css = """
+#preview img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain;
+}
+"""
+
+with gr.Blocks(theme=theme, css=css) as demo:
     gr.Markdown("# SDUnity")
 
     with gr.Tabs():
@@ -62,7 +70,13 @@ with gr.Blocks(theme=theme) as demo:
 
             with gr.Row():
                 output = gr.Image(label="Result")
-                preview = gr.Image(label="Preview", visible=True, width=768, height=768)
+                preview = gr.Image(
+                    label="Preview",
+                    visible=True,
+                    width=768,
+                    height=768,
+                    elem_id="preview",
+                )
 
         with gr.TabItem("Model Manager"):
             with gr.Tabs():
