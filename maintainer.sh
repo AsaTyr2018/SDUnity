@@ -1,0 +1,93 @@
+#!/bin/bash
+
+# Maintainer script for SDUnity
+# Usage: sudo ./maintainer.sh <install|update|uninstall>
+
+set -euo pipefail
+
+if [ "$EUID" -ne 0 ]; then
+    echo "Please run as root or with sudo." >&2
+    exit 1
+fi
+
+TARGET_DIR="/opt/SDUnity"
+
+# Repository to clone from when installing
+REPO_URL="https://github.com/AsaTyr2018/SDUnity.git"
+
+# If the script itself lives inside a git repository, prefer its remote URL
+SCRIPT_DIR=$(dirname "$(realpath "$0")")
+REPO_SRC=$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel 2>/dev/null || true)
+if [ -n "$REPO_SRC" ]; then
+    LOCAL_REMOTE=$(git -C "$REPO_SRC" config --get remote.origin.url 2>/dev/null || true)
+    if [ -n "$LOCAL_REMOTE" ]; then
+        REPO_URL="$LOCAL_REMOTE"
+    fi
+fi
+
+check_deps() {
+    for cmd in git python3 pip3; do
+        if ! command -v $cmd >/dev/null 2>&1; then
+            echo "Error: $cmd is required but not installed." >&2
+            exit 1
+        fi
+    done
+}
+
+fix_permissions() {
+    local user="${SUDO_USER:-$(whoami)}"
+    chown -R "$user":"$user" "$TARGET_DIR"
+    chmod -R u+rwX,go+rX "$TARGET_DIR"
+}
+
+install_sdunity() {
+    check_deps
+    if [ -d "$TARGET_DIR/.git" ]; then
+        echo "SDUnity already installed in $TARGET_DIR"
+    else
+        echo "Cloning SDUnity into $TARGET_DIR"
+        git clone "$REPO_URL" "$TARGET_DIR"
+    fi
+    pip3 install -r "$TARGET_DIR/requirements.txt"
+    fix_permissions
+    echo "Installation completed."
+}
+
+update_sdunity() {
+    check_deps
+    if [ ! -d "$TARGET_DIR/.git" ]; then
+        echo "SDUnity is not installed in $TARGET_DIR" >&2
+        exit 1
+    fi
+    cd "$TARGET_DIR"
+    git pull
+    pip3 install -r requirements.txt
+    fix_permissions
+    echo "Update completed."
+}
+
+uninstall_sdunity() {
+    if [ -d "$TARGET_DIR" ]; then
+        rm -rf "$TARGET_DIR"
+        echo "Removed $TARGET_DIR"
+    else
+        echo "SDUnity not found at $TARGET_DIR" >&2
+    fi
+}
+
+case "$1" in
+    install)
+        install_sdunity
+        ;;
+    update)
+        update_sdunity
+        ;;
+    uninstall)
+        uninstall_sdunity
+        ;;
+    *)
+        echo "Usage: $0 {install|update|uninstall}" >&2
+        exit 1
+        ;;
+ esac
+
