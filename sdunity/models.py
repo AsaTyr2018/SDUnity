@@ -232,3 +232,51 @@ def move_model_file(
         backend.pipelines.pop(model_name, None)
 
     return dest
+
+
+def load_pipeline(model_name: str, category: Optional[str] = None) -> None:
+    """Preload the specified model pipeline into VRAM."""
+    if category is None:
+        category = _model_category(model_name)
+    get_pipeline(model_name, category=category)
+
+
+def unload_pipeline(model_name: str | None = None, category: Optional[str] = None) -> bool:
+    """Unload a model pipeline from VRAM.
+
+    If ``model_name`` is ``None`` all loaded pipelines will be removed."""
+
+    unloaded = False
+
+    if model_name is not None:
+        if category is None:
+            category = _model_category(model_name)
+        backend = get_backend(category)
+        pipe = backend.pipelines.pop(model_name, None)
+        if pipe:
+            try:
+                pipe.to("cpu")
+            except Exception:
+                pass
+            unloaded = True
+    else:
+        for backend in BACKENDS.values():
+            for name, pipe in list(backend.pipelines.items()):
+                try:
+                    pipe.to("cpu")
+                except Exception:
+                    pass
+                del backend.pipelines[name]
+                unloaded = True
+
+    if unloaded and torch.cuda.is_available():
+        torch.cuda.empty_cache()
+    return unloaded
+
+
+def is_pipeline_loaded(model_name: str, category: Optional[str] = None) -> bool:
+    """Return ``True`` if a pipeline is currently loaded in VRAM."""
+    if category is None:
+        category = _model_category(model_name)
+    backend = get_backend(category)
+    return model_name in backend.pipelines

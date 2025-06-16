@@ -72,6 +72,10 @@ with gr.Blocks(theme=theme, css=css) as demo:
                             choices=models.list_loras(), label="LoRA", multiselect=True
                         )
                         refresh = gr.Button("Refresh")
+                        load_btn = gr.Button("Load to VRAM", variant="primary")
+                        unload_btn = gr.Button("Unload from VRAM")
+                        load_status = gr.Markdown("")
+                        loaded_model_state = gr.State("")
 
             with gr.Row():
                 output = gr.Image(
@@ -327,6 +331,20 @@ with gr.Blocks(theme=theme, css=css) as demo:
                 cat_upd, model_upd, lora_upd = models.refresh_lists(current_cat)
                 return cat_upd, model_upd, lora_upd, f"Removed {removed} file(s)"
 
+            def _load_model(cat, name, loaded):
+                if not name:
+                    return loaded, "No model selected"
+                if loaded and loaded != name:
+                    models.unload_pipeline(loaded)
+                models.load_pipeline(name, category=cat)
+                return name, f"Loaded {name} to VRAM"
+
+            def _unload_model(loaded):
+                if not loaded:
+                    return "", "No model loaded"
+                models.unload_pipeline(loaded)
+                return "", f"Unloaded {loaded}"
+
             def _prompt_autocomplete(text):
                 opts = tags.suggestions_from_prompt(text)
                 return gr.update(choices=opts, value=None, visible=bool(opts))
@@ -485,6 +503,17 @@ with gr.Blocks(theme=theme, css=css) as demo:
         _remove_models,
         inputs=[model_browser, model_category],
         outputs=[model_category, model, lora, remove_status],
+    )
+
+    load_btn.click(
+        _load_model,
+        inputs=[model_category, model, loaded_model_state],
+        outputs=[loaded_model_state, load_status],
+    )
+    unload_btn.click(
+        _unload_model,
+        inputs=loaded_model_state,
+        outputs=[loaded_model_state, load_status],
     )
 
 if __name__ == "__main__":
