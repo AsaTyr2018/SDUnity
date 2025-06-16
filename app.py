@@ -62,7 +62,7 @@ with gr.Blocks(theme=theme) as demo:
 
             with gr.Row():
                 output = gr.Image(label="Result")
-                preview = gr.Image(label="Preview", visible=False)
+                preview = gr.Image(label="Preview", visible=False, width=512, height=512)
 
         with gr.TabItem("Model Manager"):
             with gr.Tabs():
