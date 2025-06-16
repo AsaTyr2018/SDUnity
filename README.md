@@ -54,8 +54,10 @@ python scripts/civitai_download.py <download_url> [destination] --api-key YOUR_K
 
 ## Setup
 
-1. Install dependencies:
+1. Create a virtual environment and install dependencies:
    ```bash
+   python3 -m venv venv
+   source venv/bin/activate
    pip install -r requirements.txt
    ```
 2. (Optional) analyse an image folder:
@@ -67,9 +69,9 @@ python scripts/civitai_download.py <download_url> [destination] --api-key YOUR_K
    mkdir -p models loras
    python scripts/download_models.py
    ```
-4. Launch the app:
+4. Launch the app using the helper script:
    ```bash
-   python app.py
+   ./start.sh
    ```
 
 The interface runs on `http://localhost:7860/` by default. Gradio launch options can be adjusted from the Settings tab or by editing `sdunity/config.py` under `GRADIO_LAUNCH_CONFIG`.
@@ -79,7 +81,8 @@ Prompt presets live in `presets.txt` and can be selected from the dropdown in th
 ## Maintainer Script
 
 For a fully automated setup you can use `maintainer.sh` which supports
-`install`, `update` and `uninstall` commands. Run the script with `sudo`:
+`install`, `update` and `uninstall` commands. The script manages its own
+virtual environment under `/opt/SDUnity/venv`. Run it with `sudo`:
 
 ```bash
 sudo ./maintainer.sh install    # install SDUnity under /opt/SDUnity
@@ -87,4 +90,4 @@ sudo ./maintainer.sh update     # pull latest changes and upgrade deps
 sudo ./maintainer.sh uninstall  # remove the installed files
 ```
 
-The script depends on `git`, `python3` and `pip3` being available.
+The script depends on `git` and `python3` being available.
