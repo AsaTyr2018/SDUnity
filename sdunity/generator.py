@@ -15,6 +15,7 @@ def generate_image(
     prompt: str,
     negative_prompt: str,
     seed: int,
+    random_seed: bool,
     steps: int,
     width: int,
     height: int,
@@ -27,8 +28,15 @@ def generate_image(
     smooth_preview: bool,
     progress=gr.Progress(),
 ) -> Tuple[Image.Image, int, bytes]:
-    """Generate one or more images using the selected diffusion model."""
-    if seed is None:
+    """Generate one or more images using the selected diffusion model.
+
+    Parameters
+    ----------
+    random_seed : bool
+        If True, ignore the provided seed and generate a new random seed
+        for this generation run.
+    """
+    if random_seed or seed is None:
         seed = random.randint(0, 2**32 - 1)
 
     images_per_batch = max(1, int(images_per_batch))
@@ -52,9 +60,13 @@ def generate_image(
     _STOP = object()
 
     def _decode_preview_latents(latents):
-        if hasattr(pipe, "image_processor") and hasattr(pipe.image_processor, "postprocess"):
+        if hasattr(pipe, "image_processor") and hasattr(
+            pipe.image_processor, "postprocess"
+        ):
             return pipe.image_processor.postprocess(latents, output_type="pil")
-        if hasattr(pipe, "vae_image_processor") and hasattr(pipe.vae_image_processor, "postprocess"):
+        if hasattr(pipe, "vae_image_processor") and hasattr(
+            pipe.vae_image_processor, "postprocess"
+        ):
             return pipe.vae_image_processor.postprocess(latents, output_type="pil")
         if hasattr(pipe, "decode_latents"):
             imgs = pipe.decode_latents(latents)
