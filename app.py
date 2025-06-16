@@ -60,8 +60,6 @@ css = """
     width: 128px !important;
     height: 128px !important;
 }
-"""
-
 
 #imagesgallery .thumbnail-item.thumbnail-lg {
     width: 128px !important;
