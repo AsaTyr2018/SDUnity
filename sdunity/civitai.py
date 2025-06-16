@@ -32,9 +32,13 @@ def search_models(
     query: str = "",
     model_type: str = "sd15",
     sort: str = "Most Downloaded",
-    limit: int = 20,
+    limit: int = 70,
 ):
-    """Search models on Civitai and return metadata and versions."""
+    """Search models on Civitai and return metadata and versions.
+
+    If ``query`` is provided, the API's ``query`` parameter is used to
+    filter results by name.
+    """
 
     params = {
         "types": "Checkpoint",
