@@ -1,4 +1,5 @@
 import os
+import sys
 import gradio as gr
 from PIL import Image
 
@@ -179,6 +180,58 @@ with gr.Blocks(theme=theme, css=css) as demo:
                         civitai.download_model(r["downloadUrl"], dest, progress=progress)
                         break
                 return "Downloaded"
+
+        with gr.TabItem("Settings"):
+            settings_inputs = []
+            civitai_key = gr.Textbox(
+                label="Civitai API Key",
+                value=config.USER_CONFIG.get("civitai_api_key", ""),
+            )
+            settings_inputs.append(civitai_key)
+
+            for k, default in config.GRADIO_LAUNCH_CONFIG.items():
+                val = config.USER_CONFIG.get(k, default)
+                if isinstance(default, bool):
+                    comp = gr.Checkbox(label=k, value=bool(val))
+                elif isinstance(default, int) or isinstance(default, float):
+                    comp = gr.Number(label=k, value=val, precision=0)
+                else:
+                    comp = gr.Textbox(label=k, value="" if val is None else val)
+                settings_inputs.append(comp)
+
+            save_status = gr.Markdown("")
+            with gr.Row():
+                save_btn = gr.Button("Save")
+                save_reload_btn = gr.Button("Save + Reload")
+
+            def _save_settings(*vals):
+                cfg = {"civitai_api_key": vals[0]}
+                idx = 1
+                for key, default in config.GRADIO_LAUNCH_CONFIG.items():
+                    val = vals[idx]
+                    idx += 1
+                    if isinstance(default, bool):
+                        cfg[key] = bool(val)
+                    elif isinstance(default, int) or isinstance(default, float):
+                        cfg[key] = None if val == "" else int(val)
+                    else:
+                        cfg[key] = val if val != "" else None
+                config.USER_CONFIG.update(cfg)
+                config.save_user_config()
+                civitai.set_api_key(cfg.get("civitai_api_key", ""))
+                for key in config.GRADIO_LAUNCH_CONFIG:
+                    if key in cfg:
+                        config.GRADIO_LAUNCH_CONFIG[key] = cfg[key]
+                return "Settings saved"
+
+            def _save_reload(*vals):
+                _save_settings(*vals)
+                os.execl(sys.executable, sys.executable, *sys.argv)
+
+            save_btn.click(_save_settings, inputs=settings_inputs, outputs=save_status)
+            save_reload_btn.click(
+                _save_reload, inputs=settings_inputs, outputs=save_status
+            )
 
     generate_btn.click(
         generator.generate_image,
