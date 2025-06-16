@@ -134,23 +134,29 @@ with gr.Blocks(theme=theme, css=css) as demo:
                     )
 
                 with gr.TabItem("Civitai Browser"):
-                    civitai_query = gr.Textbox(label="Search")
-                    civitai_type = gr.Radio(
-                        choices=["sd15", "sdxl", "ponyxl"],
-                        value="sd15",
-                        label="Model Type",
-                    )
-                    civitai_sort = gr.Dropdown(
-                        choices=["Most Downloaded", "Highest Rated", "Newest"],
-                        value="Most Downloaded",
-                        label="Sort",
-                    )
-                    civitai_search = gr.Button("Search")
-                    civitai_results = gr.Dropdown(label="Results")
-                    civitai_preview = gr.Image(label="Preview")
-                    civitai_download = gr.Button("Download")
-                    civitai_status = gr.Markdown(visible=False)
-                    civitai_state = gr.State([])
+                    with gr.Row():
+                        with gr.Column(scale=1):
+                            civitai_query = gr.Textbox(label="Search")
+                            civitai_type = gr.Radio(
+                                choices=["sd15", "sdxl", "ponyxl"],
+                                value="sd15",
+                                label="Model Type",
+                            )
+                            civitai_sort = gr.Dropdown(
+                                choices=["Most Downloaded", "Highest Rated", "Newest"],
+                                value="Most Downloaded",
+                                label="Sort",
+                            )
+                            civitai_search = gr.Button("Search")
+                        with gr.Column(scale=1):
+                            civitai_results = gr.Dropdown(label="Results")
+                            civitai_preview = gr.Image(label="Preview", height=256, width=256)
+                            civitai_progress = gr.Textbox(
+                                label="Download Progress", value="", interactive=False, visible=False
+                            )
+                            civitai_download = gr.Button("Download")
+                            civitai_status = gr.Markdown(visible=False)
+                            civitai_state = gr.State([])
                     with gr.Group(elem_id="download_popup", visible=False) as download_popup:
                         with gr.Column(elem_classes="download-popup-content"):
                             popup_status = gr.Markdown()
@@ -208,11 +214,19 @@ with gr.Blocks(theme=theme, css=css) as demo:
                         dest = os.path.join(config.MODELS_DIR, MODEL_DIR_MAP.get(t, t))
                         filename = os.path.basename(r["downloadUrl"])
                         msg = f"Downloading {filename} to {dest}..."
-                        return gr.update(visible=True), gr.update(value=msg)
-                return gr.update(visible=False), gr.update(value="Model not found")
+                        return (
+                            gr.update(visible=True),
+                            gr.update(value=msg),
+                            gr.update(value="0%", visible=True),
+                        )
+                return (
+                    gr.update(visible=False),
+                    gr.update(value="Model not found"),
+                    gr.update(value="", visible=False),
+                )
 
             def _close_download_popup():
-                return gr.update(visible=False)
+                return gr.update(visible=False), gr.update(value="", visible=False)
 
             def _civitai_download(name, t, state, progress=gr.Progress()):
                 for r in state:
@@ -232,7 +246,7 @@ with gr.Blocks(theme=theme, css=css) as demo:
                             resp.raise_for_status()
                         except Exception as e:  # pragma: no cover - network
                             print("Civitai download failed:", e)
-                            yield gr.update(value=f"Download failed: {e}")
+                            yield gr.update(value=f"Download failed: {e}"), gr.update(value="Failed")
                             return
 
                         filename = civitai._extract_filename(resp, url)
@@ -240,7 +254,7 @@ with gr.Blocks(theme=theme, css=css) as demo:
                         total = int(resp.headers.get("content-length", 0))
                         downloaded = 0
                         progress(0, desc=f"Downloading {filename}", total=total)
-                        yield gr.update(value="Download running... 0%")
+                        yield gr.update(value="Download running... 0%"), gr.update(value="0%")
                         last_percent = 0
                         with open(dest, "wb") as f:
                             for chunk in resp.iter_content(chunk_size=8192):
@@ -259,11 +273,11 @@ with gr.Blocks(theme=theme, css=css) as demo:
                                         last_percent = percent
                                         yield gr.update(
                                             value=f"Download running... {percent}%"
-                                        )
+                                        ), gr.update(value=f"{percent}%")
                         progress(total, desc="Download complete", total=total)
-                        yield gr.update(value=f"Saved to {os.path.basename(dest)}")
+                        yield gr.update(value=f"Saved to {os.path.basename(dest)}"), gr.update(value="Done")
                         return
-                yield gr.update(value="Model not found")
+                yield gr.update(value="Model not found"), gr.update(value="")
 
             def _remove_models(paths, current_cat):
                 if not paths:
@@ -396,15 +410,15 @@ with gr.Blocks(theme=theme, css=css) as demo:
     civitai_download.click(
         _open_download_popup,
         inputs=[civitai_results, civitai_type, civitai_state],
-        outputs=[download_popup, popup_status],
+        outputs=[download_popup, popup_status, civitai_progress],
     ).then(
         _civitai_download,
         inputs=[civitai_results, civitai_type, civitai_state],
-        outputs=popup_status,
+        outputs=[popup_status, civitai_progress],
     )
     popup_close.click(
         _close_download_popup,
-        outputs=download_popup,
+        outputs=[download_popup, civitai_progress],
         js="() => { const el = document.getElementById('download_popup'); if (el) el.style.display = 'none'; }",
     )
 
