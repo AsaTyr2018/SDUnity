@@ -2,7 +2,6 @@ import random
 import inspect
 import threading
 from queue import Queue
-from typing import Tuple
 from PIL import Image
 import numpy as np
 import torch
@@ -28,7 +27,7 @@ def generate_image(
     preset: str,
     smooth_preview: bool,
     progress=gr.Progress(),
-) -> Tuple[Image.Image, int, bytes]:
+) -> tuple[Image.Image | None, int]:
     """Generate one or more images using the selected diffusion model.
 
     Parameters
@@ -137,11 +136,11 @@ def generate_image(
             frame = preview_queue.get()
             if frame is _STOP:
                 break
-            yield None, seed, gr.update(value=frame, visible=True)
+            yield frame, seed
         thread.join()
     else:
         _run_generation()
 
     last_img = images[-1] if images else None
 
-    yield last_img, seed, gr.update(visible=True)
+    yield last_img, seed

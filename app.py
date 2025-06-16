@@ -67,23 +67,6 @@ with gr.Blocks(theme=theme, css=css) as demo:
                     generate_btn = gr.Button("Generate", variant="primary")
 
                 with gr.Column(scale=1):
-                    with gr.Accordion("Model", open=True):
-                        categories = models.list_categories()
-                        model_category = gr.Radio(
-                            choices=categories,
-                            value=categories[0] if categories else None,
-                            label="Model Type",
-                        )
-                        model = gr.Dropdown(
-                            choices=models.list_models(
-                                categories[0] if categories else None
-                            ),
-                            label="Model",
-                        )
-                        lora = gr.Dropdown(
-                            choices=models.list_loras(), label="LoRA", multiselect=True
-                        )
-                        refresh = gr.Button("Refresh")
                     with gr.Accordion("Generation Settings", open=False):
                         seed = gr.Number(label="Seed", value=None, precision=0)
                         random_seed_chk = gr.Checkbox(label="Random Seed", value=False)
@@ -102,9 +85,28 @@ with gr.Blocks(theme=theme, css=css) as demo:
                         )
 
             with gr.Row():
-                output = gr.Image(label="Result")
-                preview = gr.Image(
-                    label="Preview",
+                with gr.Column():
+                    with gr.Accordion("Model", open=True):
+                        categories = models.list_categories()
+                        model_category = gr.Radio(
+                            choices=categories,
+                            value=categories[0] if categories else None,
+                            label="Model Type",
+                        )
+                        model = gr.Dropdown(
+                            choices=models.list_models(
+                                categories[0] if categories else None
+                            ),
+                            label="Model",
+                        )
+                        lora = gr.Dropdown(
+                            choices=models.list_loras(), label="LoRA", multiselect=True
+                        )
+                        refresh = gr.Button("Refresh")
+
+            with gr.Row():
+                output = gr.Image(
+                    label="Result",
                     visible=True,
                     width=768,
                     height=768,
@@ -319,7 +321,7 @@ with gr.Blocks(theme=theme, css=css) as demo:
             preset,
             smooth_preview_chk,
         ],
-        outputs=[output, seed, preview],
+        outputs=[output, seed],
     )
     refresh.click(
         models.refresh_lists,
