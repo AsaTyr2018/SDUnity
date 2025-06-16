@@ -330,7 +330,7 @@ with gr.Blocks(theme=theme, css=css) as demo:
     popup_close.click(
         _close_download_popup,
         outputs=download_popup,
-        _js="() => { const el = document.getElementById('download_popup'); if (el) el.style.display = 'none'; }",
+        js="() => { const el = document.getElementById('download_popup'); if (el) el.style.display = 'none'; }",
     )
 
 if __name__ == "__main__":
