@@ -2,6 +2,8 @@ import os
 import re
 import requests
 
+from . import config
+
 BASE_MODEL_MAP = {
     "sd15": "SD 1.5",
     "sdxl": "SDXL 1.0",
@@ -9,6 +11,21 @@ BASE_MODEL_MAP = {
 }
 
 API_URL = "https://civitai.com/api/v1/models"
+
+# API key loaded from the user configuration
+API_KEY = config.USER_CONFIG.get("civitai_api_key", "")
+
+
+def set_api_key(key: str) -> None:
+    """Update the in-memory API key."""
+    global API_KEY
+    API_KEY = key
+
+
+def _headers() -> dict:
+    if API_KEY:
+        return {"Authorization": f"Bearer {API_KEY}"}
+    return {}
 
 
 def search_models(query: str = "", model_type: str = "sd15", sort: str = "Most Downloaded", limit: int = 20):
@@ -20,7 +37,7 @@ def search_models(query: str = "", model_type: str = "sd15", sort: str = "Most D
     }
     if query:
         params["query"] = query
-    resp = requests.get(API_URL, params=params, timeout=30)
+    resp = requests.get(API_URL, params=params, timeout=30, headers=_headers())
     resp.raise_for_status()
     data = resp.json()
     base = BASE_MODEL_MAP.get(model_type, "SD 1.5")
@@ -59,7 +76,7 @@ def _extract_filename(resp: requests.Response, url: str) -> str:
 def download_model(download_url: str, dest_dir: str, progress=None) -> str:
     """Download model file to dest_dir and return filepath."""
     os.makedirs(dest_dir, exist_ok=True)
-    resp = requests.get(download_url, stream=True, timeout=60)
+    resp = requests.get(download_url, stream=True, timeout=60, headers=_headers())
     resp.raise_for_status()
     filename = _extract_filename(resp, download_url)
     dest = os.path.join(dest_dir, filename)
