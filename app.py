@@ -31,24 +31,6 @@ css = """
     height: 100% !important;
     object-fit: contain;
 }
-#download_popup {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.7);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-}
-.download-popup-content {
-    background-color: #1e1e1e;
-    padding: 1em;
-    border-radius: 8px;
-    width: 300px;
-}
 """
 
 with gr.Blocks(theme=theme, css=css) as demo:
@@ -167,10 +149,6 @@ with gr.Blocks(theme=theme, css=css) as demo:
                             civitai_state = gr.State([])
                         with gr.Column(scale=1):
                             civitai_meta = gr.Markdown("", label="Model Info")
-                    with gr.Group(elem_id="download_popup", visible=False) as download_popup:
-                        with gr.Column(elem_classes="download-popup-content"):
-                            popup_status = gr.Markdown()
-                            popup_close = gr.Button("Close")
 
         with gr.TabItem("Gallery"):
             with gr.Row():
@@ -241,27 +219,6 @@ with gr.Blocks(theme=theme, css=css) as demo:
                                 return img, meta
                 return None, ""
 
-            def _open_download_popup(name, ver_name, t, state):
-                for r in state:
-                    if r["name"] == name:
-                        for ver in r["versions"]:
-                            if ver["name"] == ver_name:
-                                dest = os.path.join(config.MODELS_DIR, MODEL_DIR_MAP.get(t, t))
-                                filename = os.path.basename(ver["downloadUrl"])
-                                msg = f"Downloading {filename} to {dest}..."
-                                return (
-                                    gr.update(visible=True),
-                                    gr.update(value=msg),
-                                    gr.update(value="0%", visible=True),
-                                )
-                return (
-                    gr.update(visible=False),
-                    gr.update(value="Model not found"),
-                    gr.update(value="", visible=False),
-                )
-
-            def _close_download_popup():
-                return gr.update(visible=False), gr.update(value="", visible=False)
 
             def _civitai_download(name, ver_name, t, state, progress=gr.Progress()):
                 for r in state:
@@ -273,6 +230,9 @@ with gr.Blocks(theme=theme, css=css) as demo:
                                 )
                                 os.makedirs(dest_dir, exist_ok=True)
                                 url = ver["downloadUrl"]
+                                filename = os.path.basename(url)
+                                msg = f"Downloading {filename} to {dest_dir}..."
+                                yield gr.update(value=msg, visible=True), gr.update(value="0%", visible=True)
                                 try:
                                     resp = requests.get(
                                         url,
@@ -312,20 +272,6 @@ with gr.Blocks(theme=theme, css=css) as demo:
                                 return
                 yield gr.update(value="Model not found"), gr.update(value="")
 
-            def _open_link_popup(link, t):
-                if not link:
-                    return (
-                        gr.update(visible=False),
-                        gr.update(value="No link provided"),
-                        gr.update(value="", visible=False),
-                    )
-                dest = os.path.join(config.MODELS_DIR, MODEL_DIR_MAP.get(t, t))
-                msg = f"Downloading to {dest}..."
-                return (
-                    gr.update(visible=True),
-                    gr.update(value=msg),
-                    gr.update(value="0%", visible=True),
-                )
 
             def _civitai_link_download(link, t, progress=gr.Progress()):
                 if not link:
@@ -333,6 +279,7 @@ with gr.Blocks(theme=theme, css=css) as demo:
                     return
                 dest_dir = os.path.join(config.MODELS_DIR, MODEL_DIR_MAP.get(t, t))
                 os.makedirs(dest_dir, exist_ok=True)
+                yield gr.update(value=f"Downloading to {dest_dir}...", visible=True), gr.update(value="0%", visible=True)
                 try:
                     path = civitai.download_by_link(link, dest_dir, progress=progress)
                 except Exception as e:  # pragma: no cover - network
@@ -497,27 +444,14 @@ with gr.Blocks(theme=theme, css=css) as demo:
         outputs=[civitai_preview, civitai_meta],
     )
     civitai_download.click(
-        _open_download_popup,
-        inputs=[civitai_results, civitai_versions, civitai_type, civitai_state],
-        outputs=[download_popup, popup_status, civitai_progress],
-    ).then(
         _civitai_download,
         inputs=[civitai_results, civitai_versions, civitai_type, civitai_state],
-        outputs=[popup_status, civitai_progress],
+        outputs=[civitai_status, civitai_progress],
     )
     civitai_link_dl.click(
-        _open_link_popup,
-        inputs=[civitai_link, civitai_type],
-        outputs=[download_popup, popup_status, civitai_progress],
-    ).then(
         _civitai_link_download,
         inputs=[civitai_link, civitai_type],
-        outputs=[popup_status, civitai_progress],
-    )
-    popup_close.click(
-        _close_download_popup,
-        outputs=[download_popup, civitai_progress],
-        js="() => { const el = document.getElementById('download_popup'); if (el) el.style.display = 'none'; }",
+        outputs=[civitai_status, civitai_progress],
     )
 
     remove_model_btn.click(
