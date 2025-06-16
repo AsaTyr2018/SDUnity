@@ -114,12 +114,14 @@ with gr.Blocks(theme=theme, css=css) as demo:
         with gr.TabItem("Model Manager"):
             with gr.Tabs():
                 with gr.TabItem("Models"):
-                    gr.FileExplorer(
+                    model_browser = gr.FileExplorer(
                         root_dir=config.MODELS_DIR,
-                        glob="**/*",
+                        glob="**/*.safetensors",
                         file_count="multiple",
                         label="Model Files",
                     )
+                    remove_model_btn = gr.Button("Remove Selected")
+                    remove_status = gr.Markdown()
                 with gr.TabItem("LoRAs"):
                     gr.FileExplorer(
                         root_dir=config.LORA_DIR,
@@ -220,6 +222,20 @@ with gr.Blocks(theme=theme, css=css) as demo:
                             return gr.update(value=f"Download failed: {e}")
                         return gr.update(value=f"Saved to {os.path.basename(path)}")
                 return gr.update(value="Model not found")
+
+            def _remove_models(paths, current_cat):
+                if not paths:
+                    cat, mdl, lora_list = models.refresh_lists(current_cat)
+                    return cat, mdl, lora_list, "No files selected"
+                removed = 0
+                if isinstance(paths, str):
+                    paths = [paths]
+                for p in paths:
+                    name = os.path.basename(p)
+                    if models.remove_model_file(name):
+                        removed += 1
+                cat_upd, model_upd, lora_upd = models.refresh_lists(current_cat)
+                return cat_upd, model_upd, lora_upd, f"Removed {removed} file(s)"
 
         with gr.TabItem("Bootcamp"):
             with gr.Row():
@@ -348,6 +364,12 @@ with gr.Blocks(theme=theme, css=css) as demo:
         _close_download_popup,
         outputs=download_popup,
         js="() => { const el = document.getElementById('download_popup'); if (el) el.style.display = 'none'; }",
+    )
+
+    remove_model_btn.click(
+        _remove_models,
+        inputs=[model_browser, model_category],
+        outputs=[model_category, model, lora, remove_status],
     )
 
 if __name__ == "__main__":
