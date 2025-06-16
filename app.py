@@ -1,7 +1,10 @@
+import os
 import gradio as gr
 from PIL import Image
 
-from sdunity import presets, models, generator, gallery, config
+from sdunity import presets, models, generator, gallery, config, civitai
+
+MODEL_DIR_MAP = {"sd15": "SD15", "sdxl": "SDXL", "ponyxl": "PonyXL"}
 
 # ---------------------------------------------------------------------------
 # UI
@@ -106,6 +109,24 @@ with gr.Blocks(theme=theme, css=css) as demo:
                         label="LoRA Files",
                     )
 
+                with gr.TabItem("Civitai Browser"):
+                    civitai_query = gr.Textbox(label="Search")
+                    civitai_type = gr.Radio(
+                        choices=["sd15", "sdxl", "ponyxl"],
+                        value="sd15",
+                        label="Model Type",
+                    )
+                    civitai_sort = gr.Dropdown(
+                        choices=["Most Downloaded", "Highest Rated", "Newest"],
+                        value="Most Downloaded",
+                        label="Sort",
+                    )
+                    civitai_search = gr.Button("Search")
+                    civitai_results = gr.Dropdown(label="Results")
+                    civitai_preview = gr.Image(label="Preview")
+                    civitai_download = gr.Button("Download")
+                    civitai_state = gr.State([])
+
         with gr.TabItem("Gallery"):
             with gr.Row():
                 with gr.Column(scale=1):
@@ -132,6 +153,32 @@ with gr.Blocks(theme=theme, css=css) as demo:
                 inputs=file_tree,
                 outputs=[selected_image, metadata],
             )
+
+            def _civitai_search(q, t, s):
+                results = civitai.search_models(q, t, s)
+                names = [r["name"] for r in results]
+                img = results[0].get("image") if results else None
+                return (
+                    gr.update(choices=names, value=names[0] if names else None),
+                    results,
+                    img,
+                )
+
+            def _civitai_preview(name, state):
+                if not name:
+                    return None
+                for r in state:
+                    if r["name"] == name:
+                        return r.get("image")
+                return None
+
+            def _civitai_download(name, t, state, progress=gr.Progress()):
+                for r in state:
+                    if r["name"] == name:
+                        dest = os.path.join(config.MODELS_DIR, MODEL_DIR_MAP.get(t, t))
+                        civitai.download_model(r["downloadUrl"], dest, progress=progress)
+                        break
+                return "Downloaded"
 
     generate_btn.click(
         generator.generate_image,
@@ -166,6 +213,22 @@ with gr.Blocks(theme=theme, css=css) as demo:
         ),
         inputs=model_category,
         outputs=model,
+    )
+
+    civitai_search.click(
+        _civitai_search,
+        inputs=[civitai_query, civitai_type, civitai_sort],
+        outputs=[civitai_results, civitai_state, civitai_preview],
+    )
+    civitai_results.change(
+        _civitai_preview,
+        inputs=[civitai_results, civitai_state],
+        outputs=civitai_preview,
+    )
+    civitai_download.click(
+        _civitai_download,
+        inputs=[civitai_results, civitai_type, civitai_state],
+        outputs=None,
     )
 
 if __name__ == "__main__":
