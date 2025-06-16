@@ -4,7 +4,7 @@ import requests
 import gradio as gr
 from PIL import Image
 
-from sdunity import presets, models, generator, gallery, config, civitai, bootcamp
+from sdunity import presets, models, generator, gallery, config, civitai, bootcamp, tags
 
 MODEL_DIR_MAP = {"sd15": "SD15", "sdxl": "SDXL", "ponyxl": "PonyXL"}
 
@@ -59,6 +59,11 @@ with gr.Blocks(theme=theme, css=css) as demo:
             with gr.Row():
                 with gr.Column(scale=2):
                     prompt = gr.Textbox(label="Prompt", lines=2)
+                    tag_suggestions = gr.Dropdown(
+                        label="Tag Suggestions",
+                        choices=[],
+                        visible=False,
+                    )
                     negative_prompt = gr.Textbox(label="Negative Prompt", lines=2)
                     preset = gr.Dropdown(
                         choices=list(presets.PRESETS.keys()),
@@ -350,6 +355,14 @@ with gr.Blocks(theme=theme, css=css) as demo:
                 cat_upd, model_upd, lora_upd = models.refresh_lists(current_cat)
                 return cat_upd, model_upd, lora_upd, f"Removed {removed} file(s)"
 
+            def _prompt_autocomplete(text):
+                opts = tags.suggestions_from_prompt(text)
+                return gr.update(choices=opts, value=None, visible=bool(opts))
+
+            def _apply_tag(text, choice):
+                new_text = tags.apply_suggestion(text, choice)
+                return new_text, gr.update(choices=[], value=None, visible=False)
+
         with gr.TabItem("Bootcamp"):
             with gr.Row():
                 with gr.Column(scale=1):
@@ -452,6 +465,13 @@ with gr.Blocks(theme=theme, css=css) as demo:
         bootcamp.train_lora,
         inputs=[bc_instance, bc_model, bc_output, bc_steps, bc_lr],
         outputs=bc_log,
+    )
+
+    prompt.input(_prompt_autocomplete, inputs=prompt, outputs=tag_suggestions)
+    tag_suggestions.change(
+        _apply_tag,
+        inputs=[prompt, tag_suggestions],
+        outputs=[prompt, tag_suggestions],
     )
 
     civitai_search.click(
