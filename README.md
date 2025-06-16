@@ -10,6 +10,7 @@ The UI is organized into tabs for **Generation**, a **Model Manager** with subta
 ### THE Generator
 - Prompt and Negative Prompt inputs
 - Real-time seed control
+- Optional random seed toggle for each generation
 - Aspect ratio and sampling step sliders
  - Optional Smooth Step Streaming mode displaying intermediate steps in real time
 

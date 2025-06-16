@@ -53,20 +53,31 @@ with gr.Blocks(theme=theme, css=css) as demo:
                             label="Model Type",
                         )
                         model = gr.Dropdown(
-                            choices=models.list_models(categories[0] if categories else None),
+                            choices=models.list_models(
+                                categories[0] if categories else None
+                            ),
                             label="Model",
                         )
-                        lora = gr.Dropdown(choices=models.list_loras(), label="LoRA", multiselect=True)
+                        lora = gr.Dropdown(
+                            choices=models.list_loras(), label="LoRA", multiselect=True
+                        )
                         refresh = gr.Button("Refresh")
                     with gr.Accordion("Generation Settings", open=False):
                         seed = gr.Number(label="Seed", value=None, precision=0)
+                        random_seed_chk = gr.Checkbox(label="Random Seed", value=False)
                         steps = gr.Slider(1, 50, value=20, label="Steps")
                         width = gr.Slider(64, 1024, value=256, step=64, label="Width")
                         height = gr.Slider(64, 1024, value=256, step=64, label="Height")
                         nsfw_filter = gr.Checkbox(label="NSFW Filter", value=True)
-                        smooth_preview_chk = gr.Checkbox(label="Smooth Preview", value=False)
-                        images_per_batch = gr.Number(label="Images per Batch", value=1, precision=0, minimum=1)
-                        batch_count = gr.Number(label="Batch Count", value=1, precision=0, minimum=1)
+                        smooth_preview_chk = gr.Checkbox(
+                            label="Smooth Preview", value=False
+                        )
+                        images_per_batch = gr.Number(
+                            label="Images per Batch", value=1, precision=0, minimum=1
+                        )
+                        batch_count = gr.Number(
+                            label="Batch Count", value=1, precision=0, minimum=1
+                        )
 
             with gr.Row():
                 output = gr.Image(label="Result")
@@ -128,6 +139,7 @@ with gr.Blocks(theme=theme, css=css) as demo:
             prompt,
             negative_prompt,
             seed,
+            random_seed_chk,
             steps,
             width,
             height,
@@ -147,7 +159,10 @@ with gr.Blocks(theme=theme, css=css) as demo:
         outputs=[model_category, model, lora],
     )
     model_category.change(
-        lambda c: gr.update(choices=models.list_models(c), value=models.list_models(c)[0] if models.list_models(c) else None),
+        lambda c: gr.update(
+            choices=models.list_models(c),
+            value=models.list_models(c)[0] if models.list_models(c) else None,
+        ),
         inputs=model_category,
         outputs=model,
     )
