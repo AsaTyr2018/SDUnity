@@ -47,7 +47,10 @@ css = """
     width: 254px !important;
     height: 254px !important;
 }
+<<<<<<< codex/rework-gallery-thumbnails-size
 #imagesgallery .thumbnail-item,
+=======
+>>>>>>> main
 #imagesgallery .gallery-item {
     width: 128px !important;
     height: 128px !important;
