@@ -13,15 +13,17 @@ fi
 TARGET_DIR="/opt/SDUnity"
 VENV_DIR="$TARGET_DIR/venv"
 
-# Repository to clone from when installing
+# Repository to clone from when installing. Use HTTPS to avoid SSH key issues
 REPO_URL="https://github.com/AsaTyr2018/SDUnity.git"
 
-# If the script itself lives inside a git repository, prefer its remote URL
+# Always clone via HTTPS even if the script lives inside a git repository
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 REPO_SRC=$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel 2>/dev/null || true)
 if [ -n "$REPO_SRC" ]; then
     LOCAL_REMOTE=$(git -C "$REPO_SRC" config --get remote.origin.url 2>/dev/null || true)
-    if [ -n "$LOCAL_REMOTE" ]; then
+    if [[ "$LOCAL_REMOTE" =~ ^git@github.com:(.*)\.git$ ]]; then
+        REPO_URL="https://github.com/${BASH_REMATCH[1]}.git"
+    elif [[ "$LOCAL_REMOTE" =~ ^https://github.com/.*\.git$ ]]; then
         REPO_URL="$LOCAL_REMOTE"
     fi
 fi
