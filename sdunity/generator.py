@@ -1,7 +1,7 @@
 import random
 import inspect
-import io
-import imageio
+import threading
+from queue import Queue
 from typing import Tuple
 from PIL import Image
 import numpy as np
@@ -48,7 +48,8 @@ def generate_image(
     generator = torch.Generator(device=pipe.device).manual_seed(int(seed))
 
     images = []
-    preview_frames = [] if smooth_preview else None
+    preview_queue = Queue() if smooth_preview else None
+    _STOP = object()
 
     def _decode_preview_latents(latents):
         if hasattr(pipe, "image_processor") and hasattr(pipe.image_processor, "postprocess"):
@@ -65,10 +66,10 @@ def generate_image(
         return [Image.fromarray((img * 255).astype("uint8")) for img in imgs]
 
     def _save_preview_old(step, t, latents):
-        if preview_frames is None:
+        if preview_queue is None:
             return
         imgs = _decode_preview_latents(latents)
-        preview_frames.append(imgs[0])
+        preview_queue.put(imgs[0])
 
     def _save_preview_new(_pipe, step, t, kwargs):
         latents = kwargs.get("latents")
@@ -76,48 +77,57 @@ def generate_image(
             _save_preview_old(step, t, latents)
         return {}
 
-    for _ in range(int(batch_count)):
-        call_kwargs = dict(
-            prompt=prompt,
-            negative_prompt=negative_prompt,
-            width=int(width),
-            height=int(height),
-            num_inference_steps=int(steps),
-            generator=generator,
-            num_images_per_prompt=int(images_per_batch),
-        )
+    def _run_generation():
+        for _ in range(int(batch_count)):
+            call_kwargs = dict(
+                prompt=prompt,
+                negative_prompt=negative_prompt,
+                width=int(width),
+                height=int(height),
+                num_inference_steps=int(steps),
+                generator=generator,
+                num_images_per_prompt=int(images_per_batch),
+            )
 
-        if smooth_preview:
-            sig = inspect.signature(pipe.__call__)
-            if "callback_on_step_end" in sig.parameters:
-                call_kwargs["callback_on_step_end"] = _save_preview_new
-                call_kwargs["callback_on_step_end_tensor_inputs"] = ["latents"]
-            else:
-                call_kwargs["callback"] = _save_preview_old
-                call_kwargs["callback_steps"] = 1
+            if smooth_preview:
+                sig = inspect.signature(pipe.__call__)
+                if "callback_on_step_end" in sig.parameters:
+                    call_kwargs["callback_on_step_end"] = _save_preview_new
+                    call_kwargs["callback_on_step_end_tensor_inputs"] = ["latents"]
+                else:
+                    call_kwargs["callback"] = _save_preview_old
+                    call_kwargs["callback_steps"] = 1
 
-        result = pipe(**call_kwargs)
-        for img in result.images:
-            metadata = {
-                "prompt": prompt,
-                "negative_prompt": negative_prompt,
-                "seed": int(seed),
-                "steps": int(steps),
-                "width": int(width),
-                "height": int(height),
-                "model": model,
-                "lora": lora,
-            }
-            gallery.save_generation(img, metadata)
-        images.extend(result.images)
+            result = pipe(**call_kwargs)
+            for img in result.images:
+                metadata = {
+                    "prompt": prompt,
+                    "negative_prompt": negative_prompt,
+                    "seed": int(seed),
+                    "steps": int(steps),
+                    "width": int(width),
+                    "height": int(height),
+                    "model": model,
+                    "lora": lora,
+                }
+                gallery.save_generation(img, metadata)
+            images.extend(result.images)
+
+        if preview_queue is not None:
+            preview_queue.put(_STOP)
+
+    if smooth_preview:
+        thread = threading.Thread(target=_run_generation)
+        thread.start()
+        while True:
+            frame = preview_queue.get()
+            if frame is _STOP:
+                break
+            yield None, seed, gr.update(value=frame, visible=True)
+        thread.join()
+    else:
+        _run_generation()
 
     last_img = images[-1] if images else None
 
-    preview_data = None
-    if smooth_preview and preview_frames:
-        buffer = io.BytesIO()
-        imageio.mimsave(buffer, preview_frames, format="GIF", duration=0.2)
-        buffer.seek(0)
-        preview_data = buffer
-
-    return last_img, seed, preview_data
+    yield last_img, seed, gr.update(visible=False)

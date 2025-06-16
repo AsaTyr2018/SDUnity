@@ -11,7 +11,7 @@ The UI is organized into tabs for **Generation**, a **Model Manager** with subta
 - Prompt and Negative Prompt inputs
 - Real-time seed control
 - Aspect ratio and sampling step sliders
- - Optional Smooth Preview mode showing intermediate steps as a GIF
+ - Optional Smooth Step Streaming mode displaying intermediate steps in real time
 
 ### Model Selector
 - Choose between predefined Hugging Face models or any files placed in `models/`
