@@ -10,6 +10,12 @@ BASE_MODEL_MAP = {
     "ponyxl": "Pony",
 }
 
+TAG_MAP = {
+    "sd15": "sd1.5",
+    "sdxl": "sdxl",
+    "ponyxl": "pony",
+}
+
 API_URL = "https://civitai.com/api/v1/models"
 
 # API key loaded from the user configuration
@@ -45,6 +51,9 @@ def search_models(
         "limit": limit,
         "sort": sort,
     }
+    tag = TAG_MAP.get(model_type)
+    if tag:
+        params["tag"] = tag
     if query:
         params["query"] = query
 
