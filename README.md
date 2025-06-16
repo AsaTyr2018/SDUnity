@@ -24,6 +24,7 @@ The interface uses a modern dark theme and is divided into four main tabs:
 - Choose between predefined models or any files in `models/`
 - LoRA dropdown lists files from `loras/` with multi‑select support
 - Built‑in Civitai browser to search and download checkpoints
+- Move or delete model files from within the manager
 
 ### Web Gallery
 - Browse all saved images from `generations/`

@@ -204,3 +204,89 @@ def get_pipeline(model_name: str, progress=None, category: Optional[str] = None)
         category, _info = _find_model_info(model_name)
     backend = get_backend(category)
     return backend.get_pipeline(model_name, progress=progress)
+
+
+def remove_model_file(model_name: str, category: Optional[str] = None) -> bool:
+    """Delete a model file from disk and update caches.
+
+    Parameters
+    ----------
+    model_name:
+        Filename of the model to remove.
+    category:
+        Optional category the model currently resides in. If omitted the
+        function will attempt to locate it automatically.
+
+    Returns
+    -------
+    bool
+        ``True`` if the file was removed, ``False`` if it was not found.
+    """
+
+    if category is None:
+        category, _info = _find_model_info(model_name)
+
+    path = MODEL_LOOKUP.get(model_name)
+    if category and not path:
+        path = os.path.join(config.MODELS_DIR, category, model_name)
+
+    if not path or not os.path.isfile(path):
+        return False
+
+    try:
+        os.remove(path)
+    finally:
+        if model_name in MODEL_LOOKUP:
+            del MODEL_LOOKUP[model_name]
+        for backend in BACKENDS.values():
+            backend.pipelines.pop(model_name, None)
+    return True
+
+
+def move_model_file(
+    model_name: str,
+    new_category: str,
+    current_category: Optional[str] = None,
+) -> str:
+    """Move a model file to a different category directory.
+
+    Parameters
+    ----------
+    model_name:
+        Filename of the model to move.
+    new_category:
+        Destination category name.
+    current_category:
+        Optional current category of the model. If not provided the file will
+        be located automatically.
+
+    Returns
+    -------
+    str
+        Path to the relocated model file.
+    """
+
+    if current_category is None:
+        current_category, _info = _find_model_info(model_name)
+
+    src = MODEL_LOOKUP.get(model_name)
+    if current_category and not src:
+        src = os.path.join(config.MODELS_DIR, current_category, model_name)
+
+    if not src or not os.path.isfile(src):
+        raise FileNotFoundError(model_name)
+
+    dest_dir = os.path.join(config.MODELS_DIR, new_category)
+    os.makedirs(dest_dir, exist_ok=True)
+    dest = os.path.join(dest_dir, model_name)
+
+    if os.path.abspath(src) == os.path.abspath(dest):
+        return dest
+
+    os.rename(src, dest)
+
+    MODEL_LOOKUP[model_name] = dest
+    for backend in BACKENDS.values():
+        backend.pipelines.pop(model_name, None)
+
+    return dest
