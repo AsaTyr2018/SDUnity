@@ -198,4 +198,4 @@ def generate_image(
     last_img = images[-1] if images else None
     gallery_items = [(p, os.path.basename(p)) for p in new_paths]
 
-    yield last_img, base_seed, gallery_items
+    yield last_img, base_seed, gallery_items, new_paths
