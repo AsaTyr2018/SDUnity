@@ -130,6 +130,43 @@ def download_model(download_url: str, dest_dir: str, progress=None) -> str:
     return dest
 
 
+def resolve_download_link(link: str) -> str:
+    """Return a direct download URL from a Civitai link or page."""
+    if "api/download/models" in link:
+        return link
+
+    match = re.search(r"modelVersionId=(\d+)", link)
+    if match:
+        return f"https://civitai.com/api/download/models/{match.group(1)}"
+
+    match = re.search(r"/models/(\d+)", link)
+    if match:
+        model_id = match.group(1)
+        resp = requests.get(
+            f"https://civitai.com/api/v1/models/{model_id}",
+            timeout=30,
+            headers=_headers(),
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        versions = data.get("modelVersions") or []
+        if versions:
+            return versions[0].get("downloadUrl")
+
+    resp = requests.get(link, timeout=30, headers=_headers())
+    resp.raise_for_status()
+    match = re.search(r"https://civitai.com/api/download/models/\d+", resp.text)
+    if match:
+        return match.group(0)
+    raise ValueError("Unable to resolve download link")
+
+
+def download_by_link(link: str, dest_dir: str, progress=None) -> str:
+    """Download a model using any Civitai link."""
+    url = resolve_download_link(link)
+    return download_model(url, dest_dir, progress=progress)
+
+
 def format_metadata(model: dict, version: dict) -> str:
     """Return a simple markdown string summarising model metadata."""
 

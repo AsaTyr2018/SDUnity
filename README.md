@@ -25,6 +25,7 @@ The interface uses a modern dark theme and is divided into five main tabs:
 - Choose from any files in `models/`
 - LoRA dropdown lists files from `loras/` with multi‑select support
 - Built‑in Civitai browser to search, inspect metadata and download model versions
+- Paste a Civitai link to download directly
 - Move or delete model files from within the manager
 
 ### Web Gallery
