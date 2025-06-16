@@ -1,4 +1,5 @@
 import random
+import os
 import inspect
 import threading
 from queue import Queue
@@ -52,7 +53,7 @@ def generate_image(
     preset: str,
     smooth_preview: bool,
     progress=gr.Progress(),
-) -> tuple[Image.Image | None, int]:
+) -> tuple[Image.Image | None, int, list]:
     """Generate one or more images using the selected diffusion model.
 
     Parameters
@@ -87,6 +88,7 @@ def generate_image(
     generator = torch.Generator(device=pipe.device).manual_seed(int(seed))
 
     images = []
+    new_paths = []
     preview_queue = Queue() if smooth_preview else None
     _STOP = object()
 
@@ -157,7 +159,8 @@ def generate_image(
                     "model": model,
                     "lora": lora,
                 }
-                gallery.save_generation(img, metadata)
+                path = gallery.save_generation(img, metadata)
+                new_paths.append(path)
             images.extend(result.images)
 
         if preview_queue is not None:
@@ -170,11 +173,12 @@ def generate_image(
             frame = preview_queue.get()
             if frame is _STOP:
                 break
-            yield frame, seed
+            yield frame, seed, gr.update()
         thread.join()
     else:
         _run_generation()
 
     last_img = images[-1] if images else None
+    gallery_items = [(p, os.path.basename(p)) for p in new_paths]
 
-    yield last_img, seed
+    yield last_img, seed, gallery_items
