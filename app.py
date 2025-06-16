@@ -89,21 +89,77 @@ with gr.Blocks(theme=theme, css=css) as demo:
                 gen_gallery = gr.Gallery(label="Current Batch", show_label=True)
 
         with gr.TabItem("Generation Settings"):
-            seed = gr.Number(label="Seed", value=None, precision=0)
-            random_seed_chk = gr.Checkbox(label="Random Seed", value=False)
-            steps = gr.Slider(1, 50, value=20, label="Steps")
-            width = gr.Slider(64, 1024, value=256, step=64, label="Width")
-            height = gr.Slider(64, 1024, value=256, step=64, label="Height")
-            guidance_scale = gr.Slider(1, 20, value=7.5, step=0.5, label="Guidance Scale")
-            clip_skip = gr.Slider(1, 4, value=1, step=1, label="Clip Skip")
-            nsfw_filter = gr.Checkbox(label="NSFW Filter", value=True)
-            smooth_preview_chk = gr.Checkbox(label="Smooth Preview", value=False)
-            images_per_batch = gr.Number(
-                label="Images per Batch", value=1, precision=0, minimum=1
-            )
-            batch_count = gr.Number(
-                label="Batch Count", value=1, precision=0, minimum=1
-            )
+            with gr.Row():
+                with gr.Column():
+                    seed = gr.Number(
+                        label="Seed",
+                        value=None,
+                        precision=0,
+                        info="Random seed for reproducible results",
+                    )
+                    random_seed_chk = gr.Checkbox(
+                        label="Random Seed",
+                        value=False,
+                        info="Use a new seed for each batch",
+                    )
+                    steps = gr.Slider(
+                        1, 50, value=20, label="Steps", info="Number of denoising steps"
+                    )
+                    guidance_scale = gr.Slider(
+                        1,
+                        20,
+                        value=7.5,
+                        step=0.5,
+                        label="Guidance Scale",
+                        info="How closely the image follows the prompt",
+                    )
+                    clip_skip = gr.Slider(
+                        1,
+                        4,
+                        value=1,
+                        step=1,
+                        label="Clip Skip",
+                        info="Skip final CLIP layers",
+                    )
+                    nsfw_filter = gr.Checkbox(
+                        label="NSFW Filter", value=True, info="Enable safety checker"
+                    )
+                with gr.Column():
+                    width = gr.Slider(
+                        64,
+                        1024,
+                        value=256,
+                        step=64,
+                        label="Width",
+                        info="Output image width",
+                    )
+                    height = gr.Slider(
+                        64,
+                        1024,
+                        value=256,
+                        step=64,
+                        label="Height",
+                        info="Output image height",
+                    )
+                    smooth_preview_chk = gr.Checkbox(
+                        label="Smooth Preview",
+                        value=False,
+                        info="Show real-time preview while generating",
+                    )
+                    images_per_batch = gr.Number(
+                        label="Images per Batch",
+                        value=1,
+                        precision=0,
+                        minimum=1,
+                        info="How many images to generate at once",
+                    )
+                    batch_count = gr.Number(
+                        label="Batch Count",
+                        value=1,
+                        precision=0,
+                        minimum=1,
+                        info="Number of batches to run",
+                    )
 
         with gr.TabItem("Model Manager"):
             with gr.Tabs():
@@ -144,9 +200,14 @@ with gr.Blocks(theme=theme, css=css) as demo:
                         with gr.Column(scale=1):
                             civitai_results = gr.Dropdown(label="Results")
                             civitai_versions = gr.Dropdown(label="Version")
-                            civitai_preview = gr.Image(label="Preview", height=256, width=256)
+                            civitai_preview = gr.Image(
+                                label="Preview", height=256, width=256
+                            )
                             civitai_progress = gr.Textbox(
-                                label="Download Progress", value="", interactive=False, visible=False
+                                label="Download Progress",
+                                value="",
+                                interactive=False,
+                                visible=False,
                             )
                             civitai_download = gr.Button("Download")
                             civitai_status = gr.Markdown(visible=False)
@@ -189,11 +250,23 @@ with gr.Blocks(theme=theme, css=css) as demo:
 
             refresh_gallery.click(
                 _refresh_gallery,
-                outputs=[gallery_grid, gallery_state, selected_image, metadata, delete_status],
+                outputs=[
+                    gallery_grid,
+                    gallery_state,
+                    selected_image,
+                    metadata,
+                    delete_status,
+                ],
             )
             demo.load(
                 _refresh_gallery,
-                outputs=[gallery_grid, gallery_state, selected_image, metadata, delete_status],
+                outputs=[
+                    gallery_grid,
+                    gallery_state,
+                    selected_image,
+                    metadata,
+                    delete_status,
+                ],
             )
             gallery_grid.select(
                 _select_image,
@@ -203,7 +276,14 @@ with gr.Blocks(theme=theme, css=css) as demo:
             delete_btn.click(
                 _delete_image,
                 inputs=selected_path,
-                outputs=[gallery_grid, gallery_state, selected_image, metadata, delete_status, selected_path],
+                outputs=[
+                    gallery_grid,
+                    gallery_state,
+                    selected_image,
+                    metadata,
+                    delete_status,
+                    selected_path,
+                ],
             )
 
             def _civitai_search(q, t, s):
@@ -212,7 +292,9 @@ with gr.Blocks(theme=theme, css=css) as demo:
                 if results:
                     vers = [v["name"] for v in results[0]["versions"]]
                     img = results[0]["versions"][0].get("image")
-                    meta = civitai.format_metadata(results[0], results[0]["versions"][0])
+                    meta = civitai.format_metadata(
+                        results[0], results[0]["versions"][0]
+                    )
                 else:
                     vers = []
                     img = None
@@ -235,7 +317,11 @@ with gr.Blocks(theme=theme, css=css) as demo:
                         ver = r["versions"][0]
                         img = ver.get("image")
                         meta = civitai.format_metadata(r, ver)
-                        return img, meta, gr.update(choices=vers, value=vers[0] if vers else None)
+                        return (
+                            img,
+                            meta,
+                            gr.update(choices=vers, value=vers[0] if vers else None),
+                        )
                 return None, "", gr.update(choices=[], value=None)
 
             def _civitai_version_change(model_name, version_name, state):
@@ -247,7 +333,6 @@ with gr.Blocks(theme=theme, css=css) as demo:
                                 meta = civitai.format_metadata(r, ver)
                                 return img, meta
                 return None, ""
-
 
             def _civitai_download(name, ver_name, t, state, progress=gr.Progress()):
                 for r in state:
@@ -261,7 +346,9 @@ with gr.Blocks(theme=theme, css=css) as demo:
                                 url = ver["downloadUrl"]
                                 filename = os.path.basename(url)
                                 msg = f"Downloading {filename} to {dest_dir}..."
-                                yield gr.update(value=msg, visible=True), gr.update(value="0%", visible=True)
+                                yield gr.update(value=msg, visible=True), gr.update(
+                                    value="0%", visible=True
+                                )
                                 try:
                                     resp = requests.get(
                                         url,
@@ -272,7 +359,9 @@ with gr.Blocks(theme=theme, css=css) as demo:
                                     resp.raise_for_status()
                                 except Exception as e:  # pragma: no cover - network
                                     print("Civitai download failed:", e)
-                                    yield gr.update(value=f"Download failed: {e}"), gr.update(value="Failed")
+                                    yield gr.update(
+                                        value=f"Download failed: {e}"
+                                    ), gr.update(value="Failed")
                                     return
 
                                 filename = civitai._extract_filename(resp, url)
@@ -280,7 +369,9 @@ with gr.Blocks(theme=theme, css=css) as demo:
                                 total = int(resp.headers.get("content-length", 0))
                                 downloaded = 0
                                 progress((0, total), desc=f"Downloading {filename}")
-                                yield gr.update(value="Download running... 0%"), gr.update(value="0%")
+                                yield gr.update(
+                                    value="Download running... 0%"
+                                ), gr.update(value="0%")
                                 last_percent = 0
                                 with open(dest, "wb") as f:
                                     for chunk in resp.iter_content(chunk_size=8192):
@@ -290,17 +381,21 @@ with gr.Blocks(theme=theme, css=css) as demo:
                                         downloaded += len(chunk)
                                         if total:
                                             percent = int(downloaded / total * 100)
-                                            progress((downloaded, total), desc=f"Downloading {filename}")
+                                            progress(
+                                                (downloaded, total),
+                                                desc=f"Downloading {filename}",
+                                            )
                                             if percent - last_percent >= 5:
                                                 last_percent = percent
                                                 yield gr.update(
                                                     value=f"Download running... {percent}%"
                                                 ), gr.update(value=f"{percent}%")
                                 progress((total, total), desc="Download complete")
-                                yield gr.update(value=f"Saved to {os.path.basename(dest)}"), gr.update(value="Done")
+                                yield gr.update(
+                                    value=f"Saved to {os.path.basename(dest)}"
+                                ), gr.update(value="Done")
                                 return
                 yield gr.update(value="Model not found"), gr.update(value="")
-
 
             def _civitai_link_download(link, t, progress=gr.Progress()):
                 if not link:
@@ -308,14 +403,20 @@ with gr.Blocks(theme=theme, css=css) as demo:
                     return
                 dest_dir = os.path.join(config.MODELS_DIR, MODEL_DIR_MAP.get(t, t))
                 os.makedirs(dest_dir, exist_ok=True)
-                yield gr.update(value=f"Downloading to {dest_dir}...", visible=True), gr.update(value="0%", visible=True)
+                yield gr.update(
+                    value=f"Downloading to {dest_dir}...", visible=True
+                ), gr.update(value="0%", visible=True)
                 try:
                     path = civitai.download_by_link(link, dest_dir, progress=progress)
                 except Exception as e:  # pragma: no cover - network
                     print("Civitai link download failed:", e)
-                    yield gr.update(value=f"Download failed: {e}"), gr.update(value="Failed")
+                    yield gr.update(value=f"Download failed: {e}"), gr.update(
+                        value="Failed"
+                    )
                     return
-                yield gr.update(value=f"Saved to {os.path.basename(path)}"), gr.update(value="Done")
+                yield gr.update(value=f"Saved to {os.path.basename(path)}"), gr.update(
+                    value="Done"
+                )
 
             def _remove_models(paths, current_cat):
                 if not paths:
@@ -356,11 +457,29 @@ with gr.Blocks(theme=theme, css=css) as demo:
         with gr.TabItem("Bootcamp"):
             with gr.Row():
                 with gr.Column(scale=1):
-                    bc_instance = gr.Textbox(label="Instance Images", value="data/instance")
-                    bc_model = gr.Textbox(label="Base Model", value="")
-                    bc_output = gr.Textbox(label="Output Directory", value="loras/bootcamp")
-                    bc_steps = gr.Number(label="Steps", value=1000, precision=0)
-                    bc_lr = gr.Number(label="Learning Rate", value=1e-4)
+                    bc_instance = gr.Textbox(
+                        label="Instance Images",
+                        value="data/instance",
+                        info="Folder with training images",
+                    )
+                    bc_model = gr.Textbox(
+                        label="Base Model",
+                        value="",
+                        info="Model checkpoint to fine-tune",
+                    )
+                    bc_output = gr.Textbox(
+                        label="Output Directory",
+                        value="loras/bootcamp",
+                        info="Where to save the trained LoRA",
+                    )
+                    bc_steps = gr.Number(
+                        label="Steps", value=1000, precision=0, info="Training steps"
+                    )
+                    bc_lr = gr.Number(
+                        label="Learning Rate",
+                        value=1e-4,
+                        info="Optimizer learning rate",
+                    )
                     bc_start = gr.Button("Start Bootcamp", variant="primary")
                 bc_log = gr.Markdown()
 
@@ -369,18 +488,37 @@ with gr.Blocks(theme=theme, css=css) as demo:
             civitai_key = gr.Textbox(
                 label="Civitai API Key",
                 value=config.USER_CONFIG.get("civitai_api_key", ""),
+                info="Optional API key for Civitai",
             )
             settings_inputs.append(civitai_key)
 
-            for k, default in config.GRADIO_LAUNCH_CONFIG.items():
-                val = config.USER_CONFIG.get(k, default)
-                if isinstance(default, bool):
-                    comp = gr.Checkbox(label=k, value=bool(val))
-                elif isinstance(default, int) or isinstance(default, float):
-                    comp = gr.Number(label=k, value=val, precision=0)
-                else:
-                    comp = gr.Textbox(label=k, value="" if val is None else val)
-                settings_inputs.append(comp)
+            with gr.Accordion("Server Options", open=False):
+                for k, default in config.GRADIO_LAUNCH_CONFIG.items():
+                    val = config.USER_CONFIG.get(k, default)
+                    help_txt = {
+                        "server_name": "Network interface to bind",
+                        "server_port": "Port for the web UI",
+                        "share": "Create a public link",
+                        "inbrowser": "Open browser after launch",
+                        "show_error": "Display errors in UI",
+                        "debug": "Enable debug logs",
+                        "max_threads": "Maximum thread workers",
+                        "auth": "Username:password for login",
+                        "auth_message": "Message on auth prompt",
+                        "ssl_keyfile": "Path to SSL key",
+                        "ssl_certfile": "Path to SSL certificate",
+                        "quiet": "Reduce terminal output",
+                        "show_api": "Expose REST API docs",
+                    }.get(k, "")
+                    if isinstance(default, bool):
+                        comp = gr.Checkbox(label=k, value=bool(val), info=help_txt)
+                    elif isinstance(default, int) or isinstance(default, float):
+                        comp = gr.Number(label=k, value=val, precision=0, info=help_txt)
+                    else:
+                        comp = gr.Textbox(
+                            label=k, value="" if val is None else val, info=help_txt
+                        )
+                    settings_inputs.append(comp)
 
             save_status = gr.Markdown("")
             with gr.Row():
