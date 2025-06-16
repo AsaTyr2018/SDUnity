@@ -340,44 +340,51 @@ theme = gr.themes.Monochrome(primary_hue="slate").set(
 with gr.Blocks(theme=theme) as demo:
     gr.Markdown("# SDUnity")
 
-    with gr.Row():
-        with gr.Column(scale=2):
-            prompt = gr.Textbox(label="Prompt", lines=2)
-            negative_prompt = gr.Textbox(label="Negative Prompt", lines=2)
-            preset = gr.Dropdown(
-                choices=list(PRESETS.keys()),
-                label="Preset",
-                value=None,
-            )
-            generate_btn = gr.Button("Generate", variant="primary")
+    with gr.Tabs():
+        with gr.TabItem("Generation"):
+            with gr.Row():
+                with gr.Column(scale=2):
+                    prompt = gr.Textbox(label="Prompt", lines=2)
+                    negative_prompt = gr.Textbox(label="Negative Prompt", lines=2)
+                    preset = gr.Dropdown(
+                        choices=list(PRESETS.keys()),
+                        label="Preset",
+                        value=None,
+                    )
+                    generate_btn = gr.Button("Generate", variant="primary")
 
-        with gr.Column(scale=1):
-            with gr.Accordion("Model", open=True):
-                model_category = gr.Radio(
-                    choices=list_categories(),
-                    value=list_categories()[0] if list_categories() else None,
-                    label="Model Type",
-                )
-                model = gr.Dropdown(
-                    choices=list_models(list_categories()[0] if list_categories() else None),
-                    label="Model",
-                )
-                lora = gr.Dropdown(choices=list_loras(), label="LoRA", multiselect=True)
-                refresh = gr.Button("Refresh")
-            with gr.Accordion("Generation Settings", open=False):
-                seed = gr.Number(label="Seed", value=None, precision=0)
-                steps = gr.Slider(1, 50, value=20, label="Steps")
-                width = gr.Slider(64, 1024, value=256, step=64, label="Width")
-                height = gr.Slider(64, 1024, value=256, step=64, label="Height")
-                nsfw_filter = gr.Checkbox(label="NSFW Filter", value=True)
-                smooth_preview_chk = gr.Checkbox(label="Smooth Preview", value=False)
-                images_per_batch = gr.Number(label="Images per Batch", value=1, precision=0)
-                batch_count = gr.Number(label="Batch Count", value=1, precision=0)
+                with gr.Column(scale=1):
+                    with gr.Accordion("Model", open=True):
+                        model_category = gr.Radio(
+                            choices=list_categories(),
+                            value=list_categories()[0] if list_categories() else None,
+                            label="Model Type",
+                        )
+                        model = gr.Dropdown(
+                            choices=list_models(list_categories()[0] if list_categories() else None),
+                            label="Model",
+                        )
+                        lora = gr.Dropdown(choices=list_loras(), label="LoRA", multiselect=True)
+                        refresh = gr.Button("Refresh")
+                    with gr.Accordion("Generation Settings", open=False):
+                        seed = gr.Number(label="Seed", value=None, precision=0)
+                        steps = gr.Slider(1, 50, value=20, label="Steps")
+                        width = gr.Slider(64, 1024, value=256, step=64, label="Width")
+                        height = gr.Slider(64, 1024, value=256, step=64, label="Height")
+                        nsfw_filter = gr.Checkbox(label="NSFW Filter", value=True)
+                        smooth_preview_chk = gr.Checkbox(label="Smooth Preview", value=False)
+                        images_per_batch = gr.Number(label="Images per Batch", value=1, precision=0)
+                        batch_count = gr.Number(label="Batch Count", value=1, precision=0)
 
-    with gr.Row():
-        output = gr.Image(label="Result")
-        preview = gr.Image(label="Preview", visible=False)
-        gallery = gr.Gallery(label="Gallery")
+            with gr.Row():
+                output = gr.Image(label="Result")
+                preview = gr.Image(label="Preview", visible=False)
+
+        with gr.TabItem("Model Manager"):
+            gr.Markdown("WIP")
+
+        with gr.TabItem("Gallery"):
+            gallery = gr.Gallery(label="Gallery")
 
     generate_btn.click(
         generate_image,

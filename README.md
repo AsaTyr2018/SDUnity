@@ -3,6 +3,7 @@
 SDUnity is a self-hosted web interface built with [Gradio](https://www.gradio.app/) for generating and managing images with Stable Diffusion models. It combines model selection, LoRA management and an image gallery into a single application.
 
 The interface now features a modern dark theme for a sleeker look.
+The UI is organized into tabs for **Generation**, a placeholder **Model Manager**, and a **Gallery** of past results.
 
 ## Features
 
