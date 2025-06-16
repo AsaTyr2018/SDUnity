@@ -47,6 +47,16 @@ css = """
     width: 254px !important;
     height: 254px !important;
 }
+#imagesgallery .thumbnail-item,
+#imagesgallery .gallery-item {
+    width: 128px !important;
+    height: 128px !important;
+}
+#imagesgallery img {
+    object-fit: contain;
+    width: 128px !important;
+    height: 128px !important;
+}
 """
 
 with gr.Blocks(theme=theme, css=css) as demo:
@@ -240,7 +250,11 @@ with gr.Blocks(theme=theme, css=css) as demo:
         with gr.TabItem("Gallery"):
             with gr.Row():
                 with gr.Column(scale=2):
-                    gallery_grid = gr.Gallery(label="Images", show_label=True)
+                    gallery_grid = gr.Gallery(
+                        label="Images",
+                        show_label=True,
+                        elem_id="imagesgallery",
+                    )
                     refresh_gallery = gr.Button("Refresh")
                 with gr.Column(scale=1):
                     selected_image = gr.Image(label="Image")
