@@ -47,10 +47,19 @@ css = """
     width: 254px !important;
     height: 254px !important;
 }
-<<<<<<< codex/rework-gallery-thumbnails-size
-#imagesgallery .thumbnail-item,
-=======
->>>>>>> main
+
+#imagesgallery .thumbnail-item.thumbnail-lg {
+    width: 128px !important;
+    height: 128px !important;
+    flex: 0 0 128px !important;
+}
+
+#imagesgallery .thumbnail-item.thumbnail-lg img {
+    width: 128px !important;
+    height: 128px !important;
+    object-fit: cover;
+}
+
 #imagesgallery .gallery-item {
     width: 128px !important;
     height: 128px !important;
@@ -61,7 +70,6 @@ css = """
     height: 128px !important;
 }
 """
-
 with gr.Blocks(theme=theme, css=css) as demo:
     gr.Markdown("# SDUnity")
 
