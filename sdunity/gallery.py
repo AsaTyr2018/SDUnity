@@ -26,3 +26,29 @@ def load_metadata(img_path: str) -> dict:
         with open(meta_path, "r", encoding="utf-8") as f:
             return json.load(f)
     return {}
+
+
+def list_images() -> list[str]:
+    """Return a list of all saved image paths sorted by modification time."""
+    paths = []
+    for root, _dirs, files in os.walk(config.GENERATIONS_DIR):
+        for f in files:
+            if f.lower().endswith(".png"):
+                paths.append(os.path.join(root, f))
+    paths.sort(key=lambda p: os.path.getmtime(p), reverse=True)
+    return paths
+
+
+def delete_image(path: str) -> bool:
+    """Remove an image and its metadata. Return True on success."""
+    if not path or not os.path.isfile(path):
+        return False
+    try:
+        os.remove(path)
+        meta_path = path.replace(".png", ".json")
+        if os.path.exists(meta_path):
+            os.remove(meta_path)
+    except OSError:
+        return False
+    return True
+
