@@ -148,6 +148,8 @@ with gr.Blocks(theme=theme, css=css) as demo:
                                 label="Sort",
                             )
                             civitai_search = gr.Button("Search")
+                            civitai_link = gr.Textbox(label="Direct Link")
+                            civitai_link_dl = gr.Button("Download Link")
                         with gr.Column(scale=1):
                             civitai_results = gr.Dropdown(label="Results")
                             civitai_versions = gr.Dropdown(label="Version")
@@ -305,6 +307,35 @@ with gr.Blocks(theme=theme, css=css) as demo:
                                 return
                 yield gr.update(value="Model not found"), gr.update(value="")
 
+            def _open_link_popup(link, t):
+                if not link:
+                    return (
+                        gr.update(visible=False),
+                        gr.update(value="No link provided"),
+                        gr.update(value="", visible=False),
+                    )
+                dest = os.path.join(config.MODELS_DIR, MODEL_DIR_MAP.get(t, t))
+                msg = f"Downloading to {dest}..."
+                return (
+                    gr.update(visible=True),
+                    gr.update(value=msg),
+                    gr.update(value="0%", visible=True),
+                )
+
+            def _civitai_link_download(link, t, progress=gr.Progress()):
+                if not link:
+                    yield gr.update(value="No link provided"), gr.update(value="")
+                    return
+                dest_dir = os.path.join(config.MODELS_DIR, MODEL_DIR_MAP.get(t, t))
+                os.makedirs(dest_dir, exist_ok=True)
+                try:
+                    path = civitai.download_by_link(link, dest_dir, progress=progress)
+                except Exception as e:  # pragma: no cover - network
+                    print("Civitai link download failed:", e)
+                    yield gr.update(value=f"Download failed: {e}"), gr.update(value="Failed")
+                    return
+                yield gr.update(value=f"Saved to {os.path.basename(path)}"), gr.update(value="Done")
+
             def _remove_models(paths, current_cat):
                 if not paths:
                     cat, mdl, lora_list = models.refresh_lists(current_cat)
@@ -452,6 +483,15 @@ with gr.Blocks(theme=theme, css=css) as demo:
     ).then(
         _civitai_download,
         inputs=[civitai_results, civitai_versions, civitai_type, civitai_state],
+        outputs=[popup_status, civitai_progress],
+    )
+    civitai_link_dl.click(
+        _open_link_popup,
+        inputs=[civitai_link, civitai_type],
+        outputs=[download_popup, popup_status, civitai_progress],
+    ).then(
+        _civitai_link_download,
+        inputs=[civitai_link, civitai_type],
         outputs=[popup_status, civitai_progress],
     )
     popup_close.click(
