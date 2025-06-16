@@ -8,6 +8,10 @@ from sdunity import presets, models, generator, gallery, config, civitai, bootca
 
 MAX_THUMBNAILS = 20
 
+# Keep a master list of gallery image paths so that select callbacks
+# can access the full set without relying on Gradio to pass state.
+GALLERY_PATHS: list[str] = []
+
 MODEL_DIR_MAP = {"sd15": "SD15", "sdxl": "SDXL", "ponyxl": "PonyXL"}
 
 # ---------------------------------------------------------------------------
@@ -290,17 +294,20 @@ with gr.Blocks(theme=theme, css=css) as demo:
                     selected_path = gr.State("")
 
             def _refresh_gallery():
+                global GALLERY_PATHS
                 paths = gallery.list_images()
+                GALLERY_PATHS = paths
                 updates = [
                     gr.update(value=paths[i] if i < len(paths) else None)
                     for i in range(MAX_THUMBNAILS)
                 ]
                 return updates + [paths[:MAX_THUMBNAILS], None, None, ""]
 
-            def _select_image(index, paths):
-                if index is None or index >= len(paths):
+            def _select_image(index: int):
+                global GALLERY_PATHS
+                if index is None or index >= len(GALLERY_PATHS):
                     return None, None, ""
-                path = paths[index]
+                path = GALLERY_PATHS[index]
                 img = Image.open(path)
                 meta = gallery.load_metadata(path)
                 return img, meta, path
@@ -324,8 +331,7 @@ with gr.Blocks(theme=theme, css=css) as demo:
             )
             for idx, img in enumerate(gallery_grid):
                 img.select(
-                    lambda _evt, paths, i=idx: _select_image(i, paths),
-                    inputs=gallery_state,
+                    lambda _evt, i=idx: _select_image(i),
                     outputs=[selected_image, metadata, selected_path],
                 )
             delete_btn.click(
