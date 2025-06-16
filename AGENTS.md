@@ -14,7 +14,7 @@ Text-to-Image generation using Stable Diffusion.
 Prompt + Negative Prompt input fields.
 Real-time seed control.
 Aspect ratio and steps/sampling settings.
-A “Smooth Preview” mode that shows image transitions between steps (like a mini-timelapse).
+A "Smooth Step Streaming" mode that displays each step in real time.
 
 __Optional: Image2Image and Inpainting/Outpainting support (future phase).__
 

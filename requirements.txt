@@ -6,5 +6,4 @@ uvicorn
 diffusers
 torch
 transformers
-imageio
 requests

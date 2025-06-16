@@ -140,4 +140,5 @@ with gr.Blocks(theme=theme) as demo:
 
 if __name__ == "__main__":
     # Launch Gradio using settings from config for easier customization
+    demo.queue()
     demo.launch(**config.GRADIO_LAUNCH_CONFIG)
