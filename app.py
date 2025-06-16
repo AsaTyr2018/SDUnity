@@ -421,7 +421,21 @@ with gr.Blocks(theme=theme) as demo:
                 preview = gr.Image(label="Preview", visible=False)
 
         with gr.TabItem("Model Manager"):
-            gr.Markdown("WIP")
+            with gr.Tabs():
+                with gr.TabItem("Models"):
+                    gr.FileExplorer(
+                        root_dir=MODELS_DIR,
+                        glob="**/*",
+                        file_count="multiple",
+                        label="Model Files",
+                    )
+                with gr.TabItem("LoRAs"):
+                    gr.FileExplorer(
+                        root_dir=LORA_DIR,
+                        glob="**/*.safetensors",
+                        file_count="multiple",
+                        label="LoRA Files",
+                    )
 
         with gr.TabItem("Gallery"):
             with gr.Row():
