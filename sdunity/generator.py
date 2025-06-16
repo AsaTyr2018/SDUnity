@@ -59,8 +59,9 @@ def generate_image(
     Parameters
     ----------
     random_seed : bool
-        If True, ignore the provided seed and generate a new random seed
-        for this generation run.
+        If ``True``, a new random seed is used for each batch. Otherwise the
+        provided ``seed`` is incremented per batch to keep results
+        reproducible.
     guidance_scale : float
         Classifier-free guidance scale.
     clip_skip : int
@@ -68,6 +69,8 @@ def generate_image(
     """
     if random_seed or seed is None:
         seed = random.randint(0, 2**32 - 1)
+
+    base_seed = int(seed)
 
     images_per_batch = max(1, int(images_per_batch))
     batch_count = max(1, int(batch_count))
@@ -85,7 +88,6 @@ def generate_image(
 
     _apply_clip_skip(pipe, int(clip_skip))
 
-    generator = torch.Generator(device=pipe.device).manual_seed(int(seed))
 
     images = []
     new_paths = []
@@ -123,14 +125,28 @@ def generate_image(
         return {}
 
     def _run_generation():
-        for _ in range(int(batch_count)):
+        for batch_idx in range(int(batch_count)):
+            if random_seed:
+                batch_seed = random.randint(0, 2**32 - 1)
+            else:
+                batch_seed = base_seed + batch_idx
+
+            seeds = [batch_seed + i for i in range(int(images_per_batch))]
+            if images_per_batch == 1:
+                gens = torch.Generator(device=pipe.device).manual_seed(seeds[0])
+            else:
+                gens = [
+                    torch.Generator(device=pipe.device).manual_seed(s)
+                    for s in seeds
+                ]
+
             call_kwargs = dict(
                 prompt=prompt,
                 negative_prompt=negative_prompt,
                 width=int(width),
                 height=int(height),
                 num_inference_steps=int(steps),
-                generator=generator,
+                generator=gens,
                 num_images_per_prompt=int(images_per_batch),
                 guidance_scale=float(guidance_scale),
             )
@@ -145,11 +161,12 @@ def generate_image(
                     call_kwargs["callback_steps"] = 1
 
             result = pipe(**call_kwargs)
-            for img in result.images:
+            for idx, img in enumerate(result.images):
+                meta_seed = seeds[idx]
                 metadata = {
                     "prompt": prompt,
                     "negative_prompt": negative_prompt,
-                    "seed": int(seed),
+                    "seed": int(meta_seed),
                     "steps": int(steps),
                     "width": int(width),
                     "height": int(height),
@@ -173,7 +190,7 @@ def generate_image(
             frame = preview_queue.get()
             if frame is _STOP:
                 break
-            yield frame, seed, gr.update()
+            yield frame, base_seed, gr.update()
         thread.join()
     else:
         _run_generation()
@@ -181,4 +198,4 @@ def generate_image(
     last_img = images[-1] if images else None
     gallery_items = [(p, os.path.basename(p)) for p in new_paths]
 
-    yield last_img, seed, gallery_items
+    yield last_img, base_seed, gallery_items
