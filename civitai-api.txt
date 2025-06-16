@@ -1,0 +1,78 @@
+GET /api/v1/models
+Endpoint URL
+
+https://civitai.com/api/v1/models
+Query Parameters
+Name 	Type 	Description
+limit (OPTIONAL) 	number 	The number of results to be returned per page. This can be a number between 1 and 100. By default, each page will return 100 results
+page (OPTIONAL) 	number 	The page from which to start fetching models
+query (OPTIONAL) 	string 	Search query to filter models by name
+tag (OPTIONAL) 	string 	Search query to filter models by tag
+username (OPTIONAL) 	string 	Search query to filter models by user
+types (OPTIONAL) 	enum[] (Checkpoint, TextualInversion, Hypernetwork, AestheticGradient, LORA, Controlnet, Poses) 	The type of model you want to filter with. If none is specified, it will return all types
+sort (OPTIONAL) 	enum (Highest Rated, Most Downloaded, Newest) 	The order in which you wish to sort the results
+period (OPTIONAL) 	enum (AllTime, Year, Month, Week, Day) 	The time frame in which the models will be sorted
+rating (OPTIONAL) (Deprecated) 	number 	The rating you wish to filter the models with. If none is specified, it will return models with any rating
+favorites (OPTIONAL) (AUTHED) 	boolean 	Filter to favorites of the authenticated user (this requires an API token or session cookie)
+hidden (OPTIONAL) (AUTHED) 	boolean 	Filter to hidden models of the authenticated user (this requires an API token or session cookie)
+primaryFileOnly (OPTIONAL) 	boolean 	Only include the primary file for each model (This will use your preferred format options if you use an API token or session cookie)
+allowNoCredit (OPTIONAL) 	boolean 	Filter to models that require or don't require crediting the creator
+allowDerivatives (OPTIONAL) 	boolean 	Filter to models that allow or don't allow creating derivatives
+allowDifferentLicenses (OPTIONAL) 	boolean 	Filter to models that allow or don't allow derivatives to have a different license
+allowCommercialUse (OPTIONAL) 	enum (None, Image, Rent, Sell) 	Filter to models based on their commercial permissions
+nsfw (OPTIONAL) 	boolean 	If false, will return safer images and hide models that don't have safe images
+supportsGeneration (OPTIONAL) 	boolean 	If true, will return models that support generation
+Response Fields
+Name 	Type 	Description
+id 	number 	The identifier for the model
+name 	string 	The name of the model
+description 	string 	The description of the model (HTML)
+type 	enum (Checkpoint, TextualInversion, Hypernetwork, AestheticGradient, LORA, Controlnet, Poses) 	The model type
+nsfw 	boolean 	Whether the model is NSFW or not
+tags 	string[] 	The tags associated with the model
+mode 	enum (Archived, TakenDown) | null 	The mode in which the model is currently on. If Archived, files field will be empty. If TakenDown, images field will be empty
+creator.username 	string 	The name of the creator
+creator.image 	string | null 	The url of the creators avatar
+stats.downloadCount 	number 	The number of downloads the model has
+stats.favoriteCount 	number 	The number of favorites the model has
+stats.commentCount 	number 	The number of comments the model has
+stats.ratingCount 	number 	The number of ratings the model has
+stats.rating 	number 	The average rating of the model
+modelVersions.id 	number 	The identifier for the model version
+modelVersions.name 	string 	The name of the model version
+modelVersions.description 	string 	The description of the model version (usually a changelog)
+modelVersions.createdAt 	Date 	The date in which the version was created
+modelVersions.downloadUrl 	string 	The download url to get the model file for this specific version
+modelVersions.trainedWords 	string[] 	The words used to trigger the model
+modelVersions.files.sizeKb 	number 	The size of the model file
+modelVersions.files.pickleScanResult 	string 	Status of the pickle scan ('Pending', 'Success', 'Danger', 'Error')
+modelVersions.files.virusScanResult 	string 	Status of the virus scan ('Pending', 'Success', 'Danger', 'Error')
+modelVersions.files.scannedAt 	Date | null 	The date in which the file was scanned
+modelVersions.files.primary 	boolean | undefined 	If the file is the primary file for the model version
+modelVersions.files.metadata.fp 	enum (fp16, fp32) | undefined 	The specified floating point for the file
+modelVersions.files.metadata.size 	enum (full, pruned) | undefined 	The specified model size for the file
+modelVersions.files.metadata.format 	enum (SafeTensor, PickleTensor, Other) | undefined 	The specified model format for the file
+modelVersions.images.id 	string 	The id for the image
+modelVersions.images.url 	string 	The url for the image
+modelVersions.images.nsfw 	string 	Whether or not the image is NSFW (note: if the model is NSFW, treat all images on the model as NSFW)
+modelVersions.images.width 	number 	The original width of the image
+modelVersions.images.height 	number 	The original height of the image
+modelVersions.images.hash 	string 	The blurhash of the image
+modelVersions.images.meta 	object | null 	The generation params of the image
+modelVersions.stats.downloadCount 	number 	The number of downloads the model has
+modelVersions.stats.ratingCount 	number 	The number of ratings the model has
+modelVersions.stats.rating 	number 	The average rating of the model
+metadata.totalItems 	string 	The total number of items available
+metadata.currentPage 	string 	The the current page you are at
+metadata.pageSize 	string 	The the size of the batch
+metadata.totalPages 	string 	The total number of pages
+metadata.nextPage 	string 	The url to get the next batch of items
+metadata.prevPage 	string 	The url to get the previous batch of items
+
+Note: The download url uses a content-disposition header to set the filename correctly. Be sure to enable that header when fetching the download. For example, with wget:
+
+wget https://civitai.com/api/download/models/{modelVersionId} --content-disposition
+
+If the creator of the asset that you are trying to download requires authentication, then you will need an API Key to download it:
+
+wget https://civitai.com/api/download/models/{modelVersionId}?token={api_key} --content-disposition
