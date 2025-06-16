@@ -150,29 +150,54 @@ with gr.Blocks(theme=theme, css=css) as demo:
 
         with gr.TabItem("Gallery"):
             with gr.Row():
-                with gr.Column(scale=1):
-                    file_tree = gr.FileExplorer(
-                        root_dir=config.GENERATIONS_DIR,
-                        glob="**/*.png",
-                        file_count="single",
-                        label="Generations",
-                        every=5,
-                    )
                 with gr.Column(scale=2):
+                    gallery_grid = gr.Gallery(label="Images", show_label=True)
+                    refresh_gallery = gr.Button("Refresh")
+                with gr.Column(scale=1):
                     selected_image = gr.Image(label="Image")
                     metadata = gr.JSON(label="Metadata")
+                    delete_btn = gr.Button("Delete Selected")
+                    delete_status = gr.Markdown()
+                    gallery_state = gr.State([])
+                    selected_path = gr.State("")
 
-            def _load_selection(path):
-                if not path:
-                    return None, None
+            def _refresh_gallery():
+                paths = gallery.list_images()
+                items = [(p, os.path.basename(p)) for p in paths]
+                return items, paths, None, None, ""
+
+            def _select_image(evt: gr.SelectData, paths):
+                if evt.index is None or evt.index >= len(paths):
+                    return None, None, ""
+                path = paths[evt.index]
                 img = Image.open(path)
                 meta = gallery.load_metadata(path)
-                return img, meta
+                return img, meta, path
 
-            file_tree.change(
-                _load_selection,
-                inputs=file_tree,
-                outputs=[selected_image, metadata],
+            def _delete_image(path):
+                msg = "No image selected"
+                if path and gallery.delete_image(path):
+                    msg = "Image deleted"
+                items, paths, _img, _meta, _ = _refresh_gallery()
+                return items, paths, None, None, msg, ""
+
+            refresh_gallery.click(
+                _refresh_gallery,
+                outputs=[gallery_grid, gallery_state, selected_image, metadata, delete_status],
+            )
+            gallery_grid.load(
+                _refresh_gallery,
+                outputs=[gallery_grid, gallery_state, selected_image, metadata, delete_status],
+            )
+            gallery_grid.select(
+                _select_image,
+                inputs=gallery_state,
+                outputs=[selected_image, metadata, selected_path],
+            )
+            delete_btn.click(
+                _delete_image,
+                inputs=selected_path,
+                outputs=[gallery_grid, gallery_state, selected_image, metadata, delete_status, selected_path],
             )
 
             def _civitai_search(q, t, s):
