@@ -36,6 +36,15 @@ All predefined models are listed in `config/model_registry.json`. Run
 sorted by category. Any additional `.safetensors` or `.ckpt` files placed in
 `models/` are automatically detected by the app.
 
+### Downloading from Civitai on the command line
+
+If you want to fetch a model from Civitai without using the web interface,
+use the helper script below. It prints the download progress to the console.
+
+```bash
+python scripts/civitai_download.py <download_url> [destination] --api-key YOUR_KEY
+```
+
 ## Setup
 
 1. Install dependencies:
