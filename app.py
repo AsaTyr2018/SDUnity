@@ -338,7 +338,7 @@ with gr.Blocks(theme=theme, css=css) as demo:
             )
             for idx, img in enumerate(gallery_grid):
                 img.select(
-                    lambda _evt, i=idx: _select_image(i),
+                    lambda i=idx: _select_image(i),
                     outputs=[selected_image, metadata, selected_path],
                 )
             delete_btn.click(
