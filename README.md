@@ -17,6 +17,7 @@ The UI is organized into tabs for **Generation**, a **Model Manager** with subta
 ### Model Selector
 - Choose between predefined Hugging Face models or any files placed in `models/`
 - Supports Stable Diffusion 1.5, SDXL and PonyXL
+- Each model type is powered by its own backend for optimal loading
 
 ### LoRA Library
 - Automatically lists LoRAs found in the `loras/` directory

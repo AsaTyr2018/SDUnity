@@ -19,6 +19,7 @@ def generate_image(
     steps: int,
     width: int,
     height: int,
+    model_type: str,
     model: str,
     lora,
     nsfw_filter: bool,
@@ -47,7 +48,7 @@ def generate_image(
         if enhancement:
             prompt = f"{prompt}, {enhancement}"
 
-    pipe = models.get_pipeline(model, progress=progress)
+    pipe = models.get_pipeline(model, progress=progress, category=model_type)
 
     if not hasattr(pipe, "_original_safety_checker"):
         pipe._original_safety_checker = getattr(pipe, "safety_checker", None)
@@ -119,6 +120,7 @@ def generate_image(
                     "steps": int(steps),
                     "width": int(width),
                     "height": int(height),
+                    "model_type": model_type,
                     "model": model,
                     "lora": lora,
                 }

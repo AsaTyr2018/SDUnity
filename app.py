@@ -143,6 +143,7 @@ with gr.Blocks(theme=theme, css=css) as demo:
             steps,
             width,
             height,
+            model_category,
             model,
             lora,
             nsfw_filter,

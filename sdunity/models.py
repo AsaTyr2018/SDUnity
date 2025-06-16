@@ -3,6 +3,7 @@ import json
 import requests
 import torch
 from diffusers import StableDiffusionPipeline, StableDiffusionXLPipeline
+from typing import Optional
 
 from . import config
 
@@ -34,8 +35,61 @@ def build_model_lookup() -> dict:
 
 MODEL_LOOKUP = build_model_lookup()
 
-# Cache for loaded pipelines
-PIPELINES = {}
+# Cache for backend instances indexed by category
+BACKENDS = {}
+
+
+class BaseBackend:
+    """Basic backend wrapper handling pipeline loading."""
+
+    pipeline_cls = StableDiffusionPipeline
+
+    def __init__(self):
+        self.pipelines = {}
+
+    def build_pipeline(self, repo: str):
+        return self.pipeline_cls.from_single_file(repo, torch_dtype=torch.float16)
+
+    def get_pipeline(self, model_name: str, progress=None):
+        if model_name not in self.pipelines:
+            repo = MODEL_LOOKUP.get(model_name)
+            if not repo or not os.path.isfile(repo):
+                try:
+                    repo = download_model_file(model_name, progress=progress)
+                    MODEL_LOOKUP[model_name] = repo
+                except Exception as e:
+                    raise ValueError(f"Unknown model: {model_name}") from e
+
+            pipe = self.build_pipeline(repo)
+            device = "cuda" if torch.cuda.is_available() else "cpu"
+            pipe.to(device)
+            self.pipelines[model_name] = pipe
+        return self.pipelines[model_name]
+
+
+class SD15Backend(BaseBackend):
+    pipeline_cls = StableDiffusionPipeline
+
+
+class SDXLBackend(BaseBackend):
+    pipeline_cls = StableDiffusionXLPipeline
+
+    def build_pipeline(self, repo: str):
+        return self.pipeline_cls.from_single_file(
+            repo, torch_dtype=torch.float16, variant="fp16"
+        )
+
+
+def get_backend(category: str) -> BaseBackend:
+    """Return a backend suitable for the given model category."""
+    key = category or "SD15"
+    if "xl" in key.lower():
+        backend_cls = SDXLBackend
+    else:
+        backend_cls = SD15Backend
+    if key not in BACKENDS:
+        BACKENDS[key] = backend_cls()
+    return BACKENDS[key]
 
 
 def _find_model_info(model_name: str):
@@ -144,25 +198,9 @@ def refresh_lists(selected_category=None):
 
 
 
-def get_pipeline(model_name: str, progress=None):
-    if model_name not in PIPELINES:
-        repo = MODEL_LOOKUP.get(model_name)
-        if not repo or not os.path.isfile(repo):
-            try:
-                repo = download_model_file(model_name, progress=progress)
-                MODEL_LOOKUP[model_name] = repo
-            except Exception as e:
-                raise ValueError(f"Unknown model: {model_name}") from e
-
-        if "xl" in model_name.lower() or "xl" in repo.lower():
-            pipe = StableDiffusionXLPipeline.from_single_file(
-                repo, torch_dtype=torch.float16, variant="fp16"
-            )
-        else:
-            pipe = StableDiffusionPipeline.from_single_file(
-                repo, torch_dtype=torch.float16
-            )
-        device = "cuda" if torch.cuda.is_available() else "cpu"
-        pipe.to(device)
-        PIPELINES[model_name] = pipe
-    return PIPELINES[model_name]
+def get_pipeline(model_name: str, progress=None, category: Optional[str] = None):
+    """Return a cached pipeline for the given model using its category."""
+    if category is None:
+        category, _info = _find_model_info(model_name)
+    backend = get_backend(category)
+    return backend.get_pipeline(model_name, progress=progress)
