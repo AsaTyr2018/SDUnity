@@ -131,13 +131,22 @@ def generate_image(
     if lora:
         if not isinstance(lora, list):
             lora = [lora]
+        adapter_names = []
+        adapter_weights = []
         for name in lora:
             path = models.LORA_LOOKUP.get(name)
             if path and hasattr(pipe, "load_lora_weights"):
                 try:
-                    pipe.load_lora_weights(path, weight=float(lora_weight))
+                    pipe.load_lora_weights(path, adapter_name=name)
+                    adapter_names.append(name)
+                    adapter_weights.append(float(lora_weight))
                 except Exception:
                     pass
+        if adapter_names and hasattr(pipe, "set_adapters"):
+            try:
+                pipe.set_adapters(adapter_names, adapter_weights)
+            except Exception:
+                pass
 
     if not hasattr(pipe, "_original_safety_checker"):
         pipe._original_safety_checker = getattr(pipe, "safety_checker", None)

@@ -7,3 +7,4 @@ diffusers
 torch
 transformers
 requests
+peft>=0.6.0
