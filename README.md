@@ -25,7 +25,7 @@ The UI is split into tabs for generation, model management, a gallery, a Bootcam
 - Control over steps, width, height and guidance scale
 - Clip skip and sampler selection
 - Precision toggle and tiling option
-- Multiple images per batch and batch repetition
+ - Multiple images per batch (parallel generation) and batch repetition
 - Smooth step streaming preview (WIP)
 - High‑res fix and denoising strength controls
 - LoRA weight slider
