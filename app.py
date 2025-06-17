@@ -814,32 +814,43 @@ with gr.Blocks(theme=theme, css=css) as demo:
                 return new_text, gr.update(choices=[], value=None, visible=False)
 
         with gr.TabItem("Bootcamp"):
-            with gr.Row():
-                with gr.Column(scale=1):
-                    bc_instance = gr.Textbox(
-                        label="Instance Images",
-                        value="data/instance",
-                        info="Folder with training images",
+            bc_project = gr.State()
+            with gr.Tabs():
+                with gr.TabItem("1. Setup"):
+                    bc_type = gr.Radio(
+                        ["Character", "Style", "Concept"],
+                        label="LoRA Type",
+                        value="Character",
                     )
-                    bc_model = gr.Textbox(
-                        label="Base Model",
-                        value="",
-                        info="Model checkpoint to fine-tune",
-                    )
-                    bc_output = gr.Textbox(
-                        label="Output Directory",
-                        value="loras/bootcamp",
-                        info="Where to save the trained LoRA",
-                    )
-                    bc_steps = gr.Number(
-                        label="Steps", value=1000, precision=0, info="Training steps"
-                    )
-                    bc_lr = gr.Number(
-                        label="Learning Rate",
-                        value=1e-4,
-                        info="Optimizer learning rate",
-                    )
-                    bc_start = gr.Button("Start Bootcamp", variant="primary")
+                    bc_name = gr.Textbox(label="Project Name", value="")
+                    bc_create = gr.Button("Create Project")
+                    bc_setup_out = gr.Markdown()
+                with gr.TabItem("2. Upload"):
+                    bc_zip = gr.File(label="Upload .zip")
+                    bc_upload = gr.Button("Upload")
+                    bc_file_count = gr.Number(label="Image Count", value=0, interactive=False)
+                    bc_upload_msg = gr.Markdown()
+                with gr.TabItem("3. Tagging"):
+                    bc_tags_df = gr.Dataframe(headers=["Image", "Tags"], datatype=["str", "str"], row_count=0)
+                    bc_save_tags = gr.Button("Save Tags")
+                    bc_tag_view = gr.Dataframe(headers=["Tag", "Count"], datatype=["str", "int"], interactive=False)
+                with gr.TabItem("4. Auto-Tagging"):
+                    bc_max_tags = gr.Number(label="Max Tags", value=5, precision=0)
+                    bc_thresh = gr.Number(label="Min Threshold", value=0.35)
+                    bc_blacklist = gr.Textbox(label="Blacklist")
+                    bc_prepend = gr.Textbox(label="Prepend Tags")
+                    bc_append = gr.Textbox(label="Append Tags")
+                    bc_run_autotag = gr.Button("Run Auto-Tagging")
+                    bc_autotag_msg = gr.Markdown()
+                with gr.TabItem("5. Review & Train"):
+                    bc_review = gr.Markdown()
+                    bc_model_select = gr.Radio(["SD 1.5", "SDXL", "Pony"], label="Model", value="SD 1.5")
+                    bc_steps = gr.Number(label="Steps", value=1000, precision=0)
+                    bc_lr = gr.Number(label="Learning Rate", value=1e-4)
+                    bc_prompt1 = gr.Textbox(label="Image #1", value="Automatically set")
+                    bc_prompt2 = gr.Textbox(label="Image #2")
+                    bc_prompt3 = gr.Textbox(label="Image #3")
+                    bc_train = gr.Button("Start Training", variant="primary")
                 bc_log = gr.Markdown()
 
         with gr.TabItem("Settings"):
@@ -967,9 +978,89 @@ with gr.Blocks(theme=theme, css=css) as demo:
         outputs=model,
     )
 
-    bc_start.click(
-        bootcamp.train_lora,
-        inputs=[bc_instance, bc_model, bc_output, bc_steps, bc_lr],
+
+    def _create_project_ui(lora_type, name):
+        if not name:
+            return None, "Please provide a project name."
+        proj = bootcamp.create_project(name, lora_type)
+        return proj.name, f"Created project `{name}`"
+
+    def _upload_zip_ui(proj_name, zip_file):
+        if not proj_name or zip_file is None:
+            return 0, [], "No project or file uploaded"
+        proj = bootcamp.BootcampProject.load(proj_name)
+        if proj is None:
+            return 0, [], "Project not found"
+        count = bootcamp.import_zip(proj, zip_file.name)
+        rows = [[img, ""] for img in proj.images]
+        return count, rows, f"Imported {count} images"
+
+    def _save_tags_ui(proj_name, rows):
+        proj = bootcamp.BootcampProject.load(proj_name)
+        if proj is None:
+            return []
+        for img, tag_str in rows:
+            proj.tags[img] = [t.strip() for t in str(tag_str).split(",") if t.strip()]
+        proj.save()
+        data = [[k, v] for k, v in bootcamp.tag_summary(proj).items()]
+        return data
+
+    def _run_autotag_ui(proj_name, prepend, append, blacklist, max_tags, thresh):
+        proj = bootcamp.BootcampProject.load(proj_name)
+        if proj is None:
+            return [], "Project not found"
+        pre = [t.strip() for t in prepend.split(",") if t.strip()]
+        app = [t.strip() for t in append.split(",") if t.strip()]
+        for img in proj.images:
+            auto = [f"tag{i}" for i in range(1, min(int(max_tags), 3) + 1)]
+            proj.tags[img] = pre + auto + app
+        proj.save()
+        rows = [[img, ", ".join(proj.tags[img])] for img in proj.images]
+        return rows, "Auto tags generated"
+
+    def _review_ui(proj_name, model_type):
+        proj = bootcamp.BootcampProject.load(proj_name)
+        if proj is None:
+            return "No project", 0, 0.0
+        params = bootcamp.suggest_params(proj, model_type)
+        info = f"### {proj.name}\nType: {proj.lora_type}\nImages: {len(proj.images)}"
+        return info, params["steps"], params["learning_rate"]
+
+    def _train_ui(proj_name, model_type, steps, lr):
+        proj = bootcamp.BootcampProject.load(proj_name)
+        if proj is None:
+            yield "Project not found"
+            return
+        yield from bootcamp.run_training(proj, model_type, steps, lr)
+
+    bc_create.click(
+        _create_project_ui,
+        inputs=[bc_type, bc_name],
+        outputs=[bc_project, bc_setup_out],
+    )
+    bc_upload.click(
+        _upload_zip_ui,
+        inputs=[bc_project, bc_zip],
+        outputs=[bc_file_count, bc_tags_df, bc_upload_msg],
+    )
+    bc_save_tags.click(
+        _save_tags_ui,
+        inputs=[bc_project, bc_tags_df],
+        outputs=bc_tag_view,
+    )
+    bc_run_autotag.click(
+        _run_autotag_ui,
+        inputs=[bc_project, bc_prepend, bc_append, bc_blacklist, bc_max_tags, bc_thresh],
+        outputs=[bc_tags_df, bc_autotag_msg],
+    )
+    bc_model_select.change(
+        _review_ui,
+        inputs=[bc_project, bc_model_select],
+        outputs=[bc_review, bc_steps, bc_lr],
+    )
+    bc_train.click(
+        _train_ui,
+        inputs=[bc_project, bc_model_select, bc_steps, bc_lr],
         outputs=bc_log,
     )
 
