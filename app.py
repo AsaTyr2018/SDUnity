@@ -65,18 +65,18 @@ body {
     height: 100% !important;
     object-fit: contain;
 }
-#gengallery {
+#finished_gallery {
     display: flex;
     flex-wrap: nowrap;
     overflow-x: auto;
 }
-#gengallery .gallery-item {
+#finished_gallery .gallery-item {
     flex: 0 0 auto;
     width: 254px !important;
     height: 254px !important;
     margin-right: 4px;
 }
-#gengallery img {
+#finished_gallery img {
     object-fit: contain;
     width: 254px !important;
     height: 254px !important;
@@ -210,13 +210,13 @@ with gr.Blocks(theme=theme, css=css) as demo:
                     height=384,
                     elem_id="preview",
                 )
-                gen_gallery = gr.Gallery(
-                    label="Current Batch",
+                finished_gallery = gr.Gallery(
+                    label="Finished Images",
                     show_label=True,
                     columns=[5],
-                    elem_id="gengallery",
+                    elem_id="finished_gallery",
                 )
-                gen_gallery_state = gr.State([])
+                finished_gallery_state = gr.State([])
 
         with gr.TabItem("Generation Settings"):
             with gr.Row():
@@ -951,7 +951,7 @@ with gr.Blocks(theme=theme, css=css) as demo:
             denoising_strength,
             highres_fix_chk,
         ],
-        outputs=[output, seed, gen_gallery, gen_gallery_state],
+        outputs=[output, seed, finished_gallery, finished_gallery_state],
     )
     refresh.click(
         models.refresh_lists,
@@ -1053,9 +1053,9 @@ with gr.Blocks(theme=theme, css=css) as demo:
             img = None
         return gr.update(value=img, visible=True)
 
-    gen_gallery.select(
+    finished_gallery.select(
         _select_gen_image,
-        inputs=gen_gallery_state,
+        inputs=finished_gallery_state,
         outputs=output,
     )
 
