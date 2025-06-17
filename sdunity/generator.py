@@ -93,6 +93,10 @@ def generate_image(
         Apply a high resolution pass when enabled.
     auto_enhance : bool
         Improve the prompt using an offline GPT-2 model before generation.
+    images_per_batch : int
+        Number of images generated in parallel for each batch.
+    batch_count : int
+        Number of sequential batches to run.
     """
     if random_seed or seed is None:
         seed = random.randint(0, 2**32 - 1)
@@ -244,7 +248,6 @@ def generate_image(
                 height=int(height),
                 num_inference_steps=int(steps),
                 generator=gens,
-                num_images_per_prompt=int(images_per_batch),
                 guidance_scale=float(guidance_scale),
             )
 
