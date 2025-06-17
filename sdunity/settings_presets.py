@@ -1,7 +1,9 @@
 import os
+import os
 import json
+from . import config
 
-PRESETS_FILE = os.path.join("config", "generator_presets.json")
+PRESETS_FILE = os.path.join(config.BASE_DIR, "config", "generator_presets.json")
 
 
 def load_presets(filepath: str = PRESETS_FILE) -> dict:
