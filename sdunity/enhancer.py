@@ -106,10 +106,19 @@ def enhance(prompt: str, max_tokens: int = 50, seed: int | None = None) -> str:
     result = _pipeline(text, **kwargs)
     generated = result[0]["generated_text"]
     if "Tags:" in generated:
-        enhanced = generated.split("Tags:", 1)[-1].strip()
+        enhanced = generated.split("Tags:", 1)[-1]
     else:
-        enhanced = generated.strip()
+        enhanced = generated
 
-    tags = [t.strip() for t in enhanced.split(",") if t.strip()]
+    enhanced = re.sub(r"(?i)tag[s]?:", "", enhanced)
+    enhanced = enhanced.replace("\n", ",")
+    items = [t.strip() for t in enhanced.split(",") if t.strip()]
+    tags = []
+    seen = set()
+    for item in items:
+        if item not in seen:
+            tags.append(item)
+            seen.add(item)
+
     final_text = ", ".join(tags) if tags else prompt
     return _cleanup_prompt(final_text)
