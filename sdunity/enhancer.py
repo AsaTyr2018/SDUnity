@@ -14,7 +14,18 @@ from transformers import (
 
 # Default model name can be overridden with SDUNITY_GPT2_MODEL env var
 _DEFAULT_MODEL = os.getenv("SDUNITY_GPT2_MODEL", "gpt2-medium")
-_POSITIVE_WORDS = os.getenv("SDUNITY_GPT2_POSITIVE_WORDS")
+
+# Path to the bundled Fooocus positive words list. Users can override this with
+# the ``SDUNITY_GPT2_POSITIVE_WORDS`` environment variable.
+_DEFAULT_POSITIVE_PATH = os.path.join(
+    os.path.dirname(os.path.dirname(__file__)),
+    "models",
+    "prompt_expansion",
+    "fooocus_expansion",
+    "positive.txt",
+)
+
+_POSITIVE_WORDS = os.getenv("SDUNITY_GPT2_POSITIVE_WORDS", _DEFAULT_POSITIVE_PATH)
 _TOP_K = int(os.getenv("SDUNITY_GPT2_TOP_K", "100"))
 
 _allowed_tokens: Set[int] | None = None
