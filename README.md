@@ -1,58 +1,61 @@
 # SDUnity
 
-**SDUnity** is a self‑hosted web interface built with [Gradio](https://www.gradio.app/) for working with Stable Diffusion models. The application brings model management, LoRA handling and an image gallery together under a single UI.
+## Index
+- [Overview](#overview)
+- [Features](#features)
+  - [Generator](#generator)
+  - [Model Manager](#model-manager)
+  - [Gallery](#gallery)
+  - [Bootcamp](#bootcamp)
+  - [Civitai Integration](#civitai-integration)
+  - [Tag Suggestions](#tag-suggestions)
+- [Setup](#setup)
+- [Maintainer Script](#maintainer-script)
+- [Command Line Tools](#command-line-tools)
 
-The interface uses a modern dark theme and is divided into five main tabs:
+## Overview
+**SDUnity** is a modern self‑hosted web interface built with [Gradio](https://www.gradio.app/) for working with Stable Diffusion models. It unifies model management, LoRA handling and a gallery into one application.
 
-- **Generation** – create images from text prompts
-- **Model Manager** – browse models and LoRAs or search Civitai
-- **Gallery** – view previous generations
-- **Bootcamp** – LoRA training (work in progress)
-- **Settings** – configure persistent options
+The UI is split into tabs for generation, model management, a gallery, a Bootcamp tab for training and a settings page.
 
 ## Features
-
-### Image Generator
-- Prompt and Negative Prompt fields
-- Seed input with optional randomisation
-- Control over steps, width and height
-- Smooth Step Streaming preview
-- NSFW filter toggle
+### Generator
+- Prompt and negative prompt inputs
+- Random or fixed seed support
+- Control over steps, width, height and guidance scale
+- Clip skip and sampler selection
+- Precision toggle and tiling option
 - Multiple images per batch and batch repetition
-- Selectable prompt presets
-- Optional GPT-2 based prompt enhancement
-- Choice of sampler and precision
-- LoRA weight slider and tiling option
-- Denoising strength control
+- Smooth step streaming preview
+- High‑res fix and denoising strength controls
+- LoRA weight slider
+- Optional GPT‑2 based prompt enhancement
+- NSFW filter toggle
 
-### Model Management
-- Choose from any files in `models/`
-- LoRA dropdown lists files from `loras/` with multi‑select support
-- Built‑in Civitai browser to search, inspect metadata and download model versions
-- Paste a Civitai link to download directly
-- Search uses dedicated tags for SD 1.5, SDXL and Pony models for more accurate results
-- Move or delete model files from within the manager
+### Model Manager
+- Browse models under `models/` and LoRAs under `loras/`
+- Categorise, move or delete model files
+- Load or unload pipelines to VRAM
+- Built‑in Civitai browser with search and metadata preview
+- Download models via search results or direct link
 
-### Web Gallery
+### Gallery
 - Browse all saved images from `generations/`
-- Display metadata such as prompt, model, LoRA and seed
+- View metadata such as prompt, model, LoRA and seed
+- Delete unwanted images
 
-### Bootcamp (WIP)
-- Simple interface to launch LoRA training using the diffusers DreamBooth script
+### Bootcamp
+- Minimal interface to launch LoRA training using the diffusers DreamBooth script
 
+### Civitai Integration
+- Search Civitai with dedicated tags for SD 1.5, SDXL and Pony models
+- Inspect versions and previews before downloading
 
-### Command line Civitai download
-
-To fetch a model directly from the terminal:
-
-```bash
-python scripts/civitai_download.py <download_url> [destination] --api-key YOUR_KEY
-```
+### Tag Suggestions
+- Auto complete prompt tags using a local dataset
 
 ## Setup
-
-Clone the repository and run the maintainer script which installs SDUnity under
-`/opt/SDUnity` with its own virtual environment:
+Clone the repository and run the maintainer script to install SDUnity under `/opt/SDUnity` with its own virtual environment:
 
 ```bash
 git clone https://github.com/AsaTyr2018/SDUnity.git
@@ -60,26 +63,22 @@ cd SDUnity
 sudo ./maintainer.sh install
 ```
 
-Start the web interface with:
+Start the interface with:
 
 ```bash
 /opt/SDUnity/start.sh
 ```
 
-The interface runs on `http://localhost:7860/` by default. Gradio launch options can be adjusted from the Settings tab or by editing `sdunity/config.py` under `GRADIO_LAUNCH_CONFIG`.
+The web UI is available on `http://localhost:7860/` by default. Launch options can be adjusted from the Settings tab or by editing `sdunity/config.py`.
 
-Prompt presets live in `presets.txt` and can be selected from the dropdown in the Generation tab.
-
-Setting the environment variable `SDUNITY_GPT2_MODEL` allows choosing a different GPT-2
-checkpoint for the auto enhancement feature.
-
-LoRA support relies on the [peft](https://github.com/huggingface/peft) package. If you install
-SDUnity manually, make sure all dependencies from `requirements.txt` are installed with
-`pip install -r requirements.txt` so that LoRA weights load correctly.
+Prompt presets live in `presets.txt`. Set the environment variable `SDUNITY_GPT2_MODEL` to use a different GPT‑2 model for auto enhancement. Install dependencies manually with `pip install -r requirements.txt` if you are not using the maintainer script.
 
 ## Maintainer Script
+`maintainer.sh` also handles updates and removal. Run it with `sudo` followed by `install`, `update` or `uninstall`. It manages a virtual environment under `/opt/SDUnity/venv` and requires `git` and `python3`.
 
-The `maintainer.sh` script also handles updates and removal. Run it with
-`sudo` followed by `install`, `update` or `uninstall`. It manages its own
-virtual environment under `/opt/SDUnity/venv` and requires `git` and
-`python3` to be available.
+## Command Line Tools
+Use `scripts/civitai_download.py` to fetch a model directly from the terminal:
+
+```bash
+python scripts/civitai_download.py <download_url> [destination] --api-key YOUR_KEY
+```
