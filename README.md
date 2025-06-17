@@ -52,7 +52,10 @@ The UI is split into tabs for generation, model management, a gallery, a Bootcam
 - Inspect versions and previews before downloading
 
 ### Tag Suggestions
-- Auto complete prompt tags using a local dataset, directly inside the prompt field
+- Auto complete prompt tags using a local dataset, directly inside the prompt field.
+- Run `scripts/import_tagcomplete.py` with a clone of
+  [a1111-sd-webui-tagcomplete](https://github.com/DominikDoom/a1111-sd-webui-tagcomplete)
+  to refresh the tag list from its CSV files.
 
 ## Setup
 Clone the repository and run the maintainer script to install SDUnity under `/opt/SDUnity` with its own virtual environment:

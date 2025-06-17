@@ -1,15 +1,62 @@
 import os
 import bisect
 import re
+import csv
 
 _TAG_FILE = os.path.join("data", "all_tags.csv")
 
+
+def _load_csv_tags(path: str) -> list[str]:
+    """Return tags from a simple CSV file with one tag per line."""
+    if not os.path.isfile(path):
+        return []
+    with open(path, "r", encoding="utf-8") as f:
+        return [line.strip().rstrip(",") for line in f if line.strip()]
+
+
+def _save_csv_tags(tags: set[str], path: str) -> None:
+    with open(path, "w", encoding="utf-8") as f:
+        for t in sorted(tags):
+            f.write(f"{t},\n")
+
+
+def _load_tagcomplete_csv(path: str) -> set[str]:
+    """Parse a tagcomplete CSV file and return tag names including synonyms."""
+    result: set[str] = set()
+    with open(path, "r", encoding="utf-8", errors="ignore") as f:
+        reader = csv.reader(f)
+        for row in reader:
+            if not row:
+                continue
+            tag = row[0].strip()
+            if tag:
+                result.add(tag)
+            if len(row) >= 4 and row[3].strip():
+                syns = [s.strip() for s in row[3].split(',') if s.strip()]
+                result.update(syns)
+    return result
+
+
+def load_tagcomplete_tags(repo_path: str) -> set[str]:
+    """Load all tags from a clone of a1111-sd-webui-tagcomplete."""
+    tags_dir = os.path.join(repo_path, "tags")
+    tags: set[str] = set()
+    for root, _dirs, files in os.walk(tags_dir):
+        for fname in files:
+            if fname.lower().endswith(".csv"):
+                tags.update(_load_tagcomplete_csv(os.path.join(root, fname)))
+    return tags
+
+
+def update_dataset_from_tagcomplete(repo_path: str, output_path: str = _TAG_FILE) -> None:
+    """Merge tags from tagcomplete repo with existing dataset."""
+    current_tags = set(_load_csv_tags(output_path))
+    current_tags.update(load_tagcomplete_tags(repo_path))
+    _save_csv_tags(current_tags, output_path)
+
+
 # Load and sort tags on import for fast lookup
-if os.path.isfile(_TAG_FILE):
-    with open(_TAG_FILE, "r", encoding="utf-8") as f:
-        _TAGS = sorted({line.strip().rstrip(',') for line in f if line.strip()})
-else:
-    _TAGS = []
+_TAGS = sorted(set(_load_csv_tags(_TAG_FILE)))
 
 
 def suggestions(prefix: str, limit: int = 10) -> list[str]:
