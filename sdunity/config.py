@@ -1,11 +1,14 @@
 import os
 import json
 
+# Base directory (project root)
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 # Directory paths
-MODELS_DIR = "models"
-LORA_DIR = "loras"
-GENERATIONS_DIR = "generations"
-WILDCARDS_DIR = "wildcards"
+MODELS_DIR = os.path.join(BASE_DIR, "models")
+LORA_DIR = os.path.join(BASE_DIR, "loras")
+GENERATIONS_DIR = os.path.join(BASE_DIR, "generations")
+WILDCARDS_DIR = os.path.join(BASE_DIR, "wildcards")
 
 # Ensure output directories exist
 os.makedirs(GENERATIONS_DIR, exist_ok=True)
@@ -46,7 +49,7 @@ GRADIO_LAUNCH_CONFIG = {
 # Settings in this section are persisted to ``config/user_config.json`` so that
 # changes made in the UI survive restarts.
 
-USER_CONFIG_PATH = os.path.join("config", "user_config.json")
+USER_CONFIG_PATH = os.path.join(BASE_DIR, "config", "user_config.json")
 
 # Default values for the user configuration. We include all Gradio launch
 # options so they can be customized from the UI along with the Civitai API key.
