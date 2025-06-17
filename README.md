@@ -78,6 +78,8 @@ The web UI is available on `http://localhost:7860/` by default. Launch options c
 
 Prompt presets live in `presets.txt`. Set the environment variable `SDUNITY_GPT2_MODEL` to use a different GPT‑2 model for auto enhancement. Install dependencies manually with `pip install -r requirements.txt` if you are not using the maintainer script.
 When enabled, prompt enhancement generates additional quality and detail tags, assembling the final prompt as `[auto quality] + [your prompt] + [auto details] + [preset]`.
+The enhancer now includes a strict instruction so the language model only returns a
+comma-separated tag list with no extra chatter.
 
 ## Maintainer Script
 `maintainer.sh` also handles updates and removal. Run it with `sudo` followed by `install`, `update` or `uninstall`. It manages a virtual environment under `/opt/SDUnity/venv` and requires `git` and `python3`.

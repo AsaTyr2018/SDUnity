@@ -92,8 +92,10 @@ def enhance(prompt: str, max_tokens: int = 50, seed: int | None = None) -> str:
 
     cleaned = _safe_str(prompt)
     text = (
-        "Take a short image prompt and expand it into a detailed list of descriptive tags.\n"
-        "Only return a comma-separated list of tags in Danbooru style. Do not use full sentences.\n\n"
+        "Always respond in the following format, without exception: "
+        "[auto quality], [enhanced input prompt], [auto-generated detail tags]. "
+        "Do NOT explain, do NOT output anything else. Input is comma-separated.\n"
+        "Expand the given prompt into a detailed list of descriptive tags in Danbooru style.\n\n"
         f"{cleaned}\nTags:"
     )
 
