@@ -19,15 +19,19 @@ def _load(model_name: str | None = None):
 
 
 def enhance(prompt: str, max_tokens: int = 50) -> str:
-    """Return an enhanced version of the given prompt using GPT-2."""
+    """Return a comma separated list of tags generated from the prompt."""
     if not prompt:
         return prompt
     _load()
-    text = f"Improve this Stable Diffusion prompt: {prompt}\nEnhanced:"
+    text = (
+        "Rewrite the following Stable Diffusion prompt as comma separated "
+        f"Danbooru style tags: {prompt}\nTags:"
+    )
     result = _pipeline(text, max_new_tokens=max_tokens, do_sample=False)
     generated = result[0]["generated_text"]
-    if "Enhanced:" in generated:
-        enhanced = generated.split("Enhanced:", 1)[-1].strip()
+    if "Tags:" in generated:
+        enhanced = generated.split("Tags:", 1)[-1].strip()
     else:
         enhanced = generated.strip()
-    return enhanced or prompt
+    tags = [t.strip() for t in enhanced.split(",") if t.strip()]
+    return ", ".join(tags) if tags else prompt
