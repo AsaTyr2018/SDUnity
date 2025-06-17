@@ -26,10 +26,10 @@ The UI is split into tabs for generation, model management, a gallery, a Bootcam
 - Clip skip and sampler selection
 - Precision toggle and tiling option
 - Multiple images per batch and batch repetition
-- Smooth step streaming preview
+- Smooth step streaming preview (WIP)
 - High‑res fix and denoising strength controls
 - LoRA weight slider
-- Optional GPT‑2 based prompt enhancement
+- Optional GPT‑2 based prompt enhancement (WIP)
 - NSFW filter toggle
 
 ### Model Manager
@@ -44,14 +44,14 @@ The UI is split into tabs for generation, model management, a gallery, a Bootcam
 - View metadata such as prompt, model, LoRA and seed
 - Delete unwanted images
 
-### Bootcamp
+### Bootcamp (WIP)
 - Minimal interface to launch LoRA training using the diffusers DreamBooth script
 
 ### Civitai Integration
 - Search Civitai with dedicated tags for SD 1.5, SDXL and Pony models
 - Inspect versions and previews before downloading
 
-### Tag Suggestions
+### Tag Suggestions (WIP)
 - Auto complete prompt tags using a local dataset
 
 ## Setup
