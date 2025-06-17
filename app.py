@@ -18,20 +18,38 @@ MODEL_DIR_MAP = {"sd15": "SD15", "sdxl": "SDXL", "ponyxl": "PonyXL"}
 # UI
 # ---------------------------------------------------------------------------
 
-theme = gr.themes.Monochrome(primary_hue="slate").set(
-    body_background_fill="#111111",
-    body_background_fill_dark="#111111",
+theme = gr.themes.Monochrome(
+    primary_hue="slate",
+    radius_size=gr.themes.sizes.radius_md,
+).set(
+    body_background_fill="#0d0d0d",
+    body_background_fill_dark="#0d0d0d",
     body_text_color="#e0e0e0",
     body_text_color_dark="#e0e0e0",
-    block_background_fill="#1e1e1e",
-    block_background_fill_dark="#1e1e1e",
-    block_border_color="#333333",
-    block_border_color_dark="#333333",
+    block_background_fill="#1b1b1b",
+    block_background_fill_dark="#1b1b1b",
+    block_border_color="#262626",
+    block_border_color_dark="#262626",
     input_background_fill="#222222",
     input_background_fill_dark="#222222",
+    shadow_drop="0 4px 8px rgba(0,0,0,0.6)",
+    shadow_drop_lg="0 6px 12px rgba(0,0,0,0.8)",
+    block_shadow="var(--shadow-drop-lg)",
+    block_shadow_dark="0 6px 12px rgba(0,0,0,0.9)",
 )
 
 css = """
+# Global dark background with subtle gradient
+body {
+    background: radial-gradient(circle at 50% 0%, #111111, #000000) !important;
+}
+
+# Slight 3D effect for blocks
+.gradio-container .gr-block, .gradio-container .gr-box {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.6), 0 4px 8px rgba(0, 0, 0, 0.4);
+    border-radius: 8px;
+}
+
 #preview img {
     width: 100% !important;
     height: 100% !important;
