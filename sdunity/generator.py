@@ -102,16 +102,24 @@ def generate_image(
     images_per_batch = max(1, int(images_per_batch))
     batch_count = max(1, int(batch_count))
 
-    if preset:
-        enhancement = presets.PRESETS.get(preset)
-        if enhancement:
-            prompt = f"{prompt}, {enhancement}"
+    enhanced_quality = ""
+    enhanced_details = ""
 
     if auto_enhance:
         try:
-            prompt = enhancer.enhance(prompt)
+            enhanced = enhancer.enhance(prompt)
+            parts = [p.strip() for p in enhanced.split(",") if p.strip()]
+            enhanced_quality = ", ".join(parts[:3])
+            enhanced_details = ", ".join(parts[3:])
         except Exception:
             pass
+
+    preset_text = ""
+    if preset:
+        preset_text = presets.PRESETS.get(preset, "")
+
+    prompt_parts = [enhanced_quality, prompt, enhanced_details, preset_text]
+    prompt = ", ".join([p for p in prompt_parts if p])
 
     pipe = models.get_pipeline(model, progress=progress, category=model_type)
 

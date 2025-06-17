@@ -29,7 +29,7 @@ The UI is split into tabs for generation, model management, a gallery, a Bootcam
 - Smooth step streaming preview (WIP)
 - High‑res fix and denoising strength controls
 - LoRA weight slider
-- Optional GPT‑2 based prompt enhancement (WIP)
+- Optional GPT‑2 based prompt enhancer that augments your prompt
 - NSFW filter toggle
 
 ### Model Manager
@@ -77,6 +77,7 @@ Start the interface with:
 The web UI is available on `http://localhost:7860/` by default. Launch options can be adjusted from the Settings tab or by editing `sdunity/config.py`.
 
 Prompt presets live in `presets.txt`. Set the environment variable `SDUNITY_GPT2_MODEL` to use a different GPT‑2 model for auto enhancement. Install dependencies manually with `pip install -r requirements.txt` if you are not using the maintainer script.
+When enabled, prompt enhancement generates additional quality and detail tags, assembling the final prompt as `[auto quality] + [your prompt] + [auto details] + [preset]`.
 
 ## Maintainer Script
 `maintainer.sh` also handles updates and removal. Run it with `sudo` followed by `install`, `update` or `uninstall`. It manages a virtual environment under `/opt/SDUnity/venv` and requires `git` and `python3`.
