@@ -6,6 +6,12 @@ from queue import Queue
 from PIL import Image
 import torch
 import gradio as gr
+from diffusers import (
+    EulerAncestralDiscreteScheduler,
+    EulerDiscreteScheduler,
+    DDIMScheduler,
+    DPMSolverMultistepScheduler,
+)
 
 from . import presets, models, gallery
 from transformers.modeling_outputs import BaseModelOutputWithPooling
@@ -52,6 +58,12 @@ def generate_image(
     batch_count: int,
     preset: str,
     smooth_preview: bool,
+    scheduler: str,
+    precision: str,
+    tile: bool,
+    lora_weight: float,
+    denoising_strength: float,
+    highres_fix: bool,
     progress=gr.Progress(),
 ) -> tuple[Image.Image | None, int, list]:
     """Generate one or more images using the selected diffusion model.
@@ -66,6 +78,18 @@ def generate_image(
         Classifier-free guidance scale.
     clip_skip : int
         Number of final CLIP layers to skip when encoding text.
+    scheduler : str
+        Sampling scheduler to use.
+    precision : str
+        ``fp16`` or ``fp32`` precision.
+    tile : bool
+        Enable tiling for seamless textures.
+    lora_weight : float
+        Weight for loaded LoRA modules.
+    denoising_strength : float
+        Denoising strength for future image-to-image support.
+    highres_fix : bool
+        Apply a high resolution pass when enabled.
     """
     if random_seed or seed is None:
         seed = random.randint(0, 2**32 - 1)
@@ -81,6 +105,39 @@ def generate_image(
             prompt = f"{prompt}, {enhancement}"
 
     pipe = models.get_pipeline(model, progress=progress, category=model_type)
+
+    if scheduler:
+        sched_map = {
+            "Euler": EulerDiscreteScheduler,
+            "Euler a": EulerAncestralDiscreteScheduler,
+            "DDIM": DDIMScheduler,
+            "DPM++ 2M Karras": DPMSolverMultistepScheduler,
+        }
+        sched_cls = sched_map.get(scheduler)
+        if sched_cls:
+            pipe.scheduler = sched_cls.from_config(pipe.scheduler.config)
+
+    dtype = torch.float16 if precision == "fp16" else torch.float32
+    try:
+        pipe.to(dtype=dtype)
+    except Exception:
+        pass
+
+    if tile and hasattr(pipe, "enable_vae_tiling"):
+        pipe.enable_vae_tiling()
+    elif hasattr(pipe, "disable_vae_tiling"):
+        pipe.disable_vae_tiling()
+
+    if lora:
+        if not isinstance(lora, list):
+            lora = [lora]
+        for name in lora:
+            path = models.LORA_LOOKUP.get(name)
+            if path and hasattr(pipe, "load_lora_weights"):
+                try:
+                    pipe.load_lora_weights(path, weight=float(lora_weight))
+                except Exception:
+                    pass
 
     if not hasattr(pipe, "_original_safety_checker"):
         pipe._original_safety_checker = getattr(pipe, "safety_checker", None)
@@ -172,6 +229,12 @@ def generate_image(
                     "height": int(height),
                     "guidance_scale": float(guidance_scale),
                     "clip_skip": int(clip_skip),
+                    "scheduler": scheduler,
+                    "precision": precision,
+                    "tile": bool(tile),
+                    "lora_weight": float(lora_weight),
+                    "denoising_strength": float(denoising_strength),
+                    "highres_fix": bool(highres_fix),
                     "model_type": model_type,
                     "model": model,
                     "lora": lora,

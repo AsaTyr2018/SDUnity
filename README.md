@@ -20,6 +20,9 @@ The interface uses a modern dark theme and is divided into five main tabs:
 - NSFW filter toggle
 - Multiple images per batch and batch repetition
 - Selectable prompt presets
+- Choice of sampler and precision
+- LoRA weight slider and tiling option
+- Denoising strength control
 
 ### Model Management
 - Choose from any files in `models/`

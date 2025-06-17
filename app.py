@@ -181,6 +181,32 @@ with gr.Blocks(theme=theme, css=css) as demo:
                         label="Clip Skip",
                         info="Skip final CLIP layers",
                     )
+                    scheduler = gr.Dropdown(
+                        label="Sampler",
+                        choices=["Euler", "Euler a", "DDIM", "DPM++ 2M Karras"],
+                        value="Euler",
+                    )
+                    precision_dd = gr.Dropdown(
+                        label="Precision",
+                        choices=["fp16", "fp32"],
+                        value="fp16",
+                    )
+                    tile_chk = gr.Checkbox(label="Tile Output", value=False)
+                    lora_weight = gr.Slider(
+                        0.0,
+                        1.0,
+                        step=0.05,
+                        value=1.0,
+                        label="LoRA Weight",
+                    )
+                    denoising_strength = gr.Slider(
+                        0.0,
+                        1.0,
+                        step=0.05,
+                        value=0.75,
+                        label="Denoising Strength",
+                    )
+                    highres_fix_chk = gr.Checkbox(label="High Res Fix", value=False)
                     nsfw_filter = gr.Checkbox(
                         label="NSFW Filter", value=True, info="Enable safety checker"
                     )
@@ -716,6 +742,12 @@ with gr.Blocks(theme=theme, css=css) as demo:
             batch_count,
             preset,
             smooth_preview_chk,
+            scheduler,
+            precision_dd,
+            tile_chk,
+            lora_weight,
+            denoising_strength,
+            highres_fix_chk,
         ],
         outputs=[output, seed, gen_gallery, gen_gallery_state],
     )
