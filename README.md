@@ -29,6 +29,7 @@ The UI is split into tabs for generation, model management, a gallery, a Bootcam
 - Smooth step streaming preview (WIP)
 - High‑res fix and denoising strength controls
 - LoRA weight slider
+- Wildcard prompts using `__name__` tokens that pull lines from files in `wildcards/`
 - Optional GPT‑2 based prompt enhancer that augments your prompt
 - NSFW filter toggle
 

@@ -13,7 +13,7 @@ from diffusers import (
     DPMSolverMultistepScheduler,
 )
 
-from . import presets, models, gallery, enhancer
+from . import presets, models, gallery, enhancer, wildcards
 from transformers.modeling_outputs import BaseModelOutputWithPooling
 
 
@@ -209,6 +209,8 @@ def generate_image(
         return {}
 
     def _run_generation():
+        base_prompt = prompt
+        base_negative_prompt = negative_prompt
         for batch_idx in range(int(batch_count)):
             if random_seed:
                 batch_seed = random.randint(0, 2**32 - 1)
@@ -224,9 +226,20 @@ def generate_image(
                     for s in seeds
                 ]
 
+            prompts = [
+                wildcards.apply(base_prompt, batch_idx * int(images_per_batch) + i)
+                for i in range(int(images_per_batch))
+            ]
+            neg_prompts = [
+                wildcards.apply(
+                    base_negative_prompt, batch_idx * int(images_per_batch) + i
+                )
+                for i in range(int(images_per_batch))
+            ]
+
             call_kwargs = dict(
-                prompt=prompt,
-                negative_prompt=negative_prompt,
+                prompt=prompts,
+                negative_prompt=neg_prompts,
                 width=int(width),
                 height=int(height),
                 num_inference_steps=int(steps),
@@ -248,8 +261,8 @@ def generate_image(
             for idx, img in enumerate(result.images):
                 meta_seed = seeds[idx]
                 metadata = {
-                    "prompt": prompt,
-                    "negative_prompt": negative_prompt,
+                    "prompt": prompts[idx],
+                    "negative_prompt": neg_prompts[idx],
                     "seed": int(meta_seed),
                     "steps": int(steps),
                     "width": int(width),
