@@ -137,8 +137,9 @@ def generate_image(
             path = models.LORA_LOOKUP.get(name)
             if path and hasattr(pipe, "load_lora_weights"):
                 try:
-                    pipe.load_lora_weights(path, adapter_name=name)
-                    adapter_names.append(name)
+                    adapter_id = os.path.splitext(name)[0]
+                    pipe.load_lora_weights(path, adapter_name=adapter_id)
+                    adapter_names.append(adapter_id)
                     adapter_weights.append(float(lora_weight))
                 except Exception:
                     pass
