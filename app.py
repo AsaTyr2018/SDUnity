@@ -86,6 +86,16 @@ css = """
     width: 128px !important;
     height: 128px !important;
 }
+#prompt_wrapper {
+    position: relative;
+}
+#tag_suggestions {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 10;
+}
 """
 with gr.Blocks(theme=theme, css=css) as demo:
     gr.Markdown("# SDUnity")
@@ -94,12 +104,15 @@ with gr.Blocks(theme=theme, css=css) as demo:
         with gr.TabItem("Generation"):
             with gr.Row():
                 with gr.Column(scale=2):
-                    prompt = gr.Textbox(label="Prompt", lines=2)
-                    tag_suggestions = gr.Dropdown(
-                        label="Tag Suggestions",
-                        choices=[],
-                        visible=False,
-                    )
+                    with gr.Box(elem_id="prompt_wrapper"):
+                        prompt = gr.Textbox(label="Prompt", lines=2)
+                        tag_suggestions = gr.Dropdown(
+                            label="",
+                            choices=[],
+                            visible=False,
+                            container=False,
+                            elem_id="tag_suggestions",
+                        )
                     negative_prompt = gr.Textbox(label="Negative Prompt", lines=2)
                     preset = gr.Dropdown(
                         choices=list(presets.PRESETS.keys()),

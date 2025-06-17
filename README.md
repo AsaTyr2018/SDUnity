@@ -51,8 +51,8 @@ The UI is split into tabs for generation, model management, a gallery, a Bootcam
 - Search Civitai with dedicated tags for SD 1.5, SDXL and Pony models
 - Inspect versions and previews before downloading
 
-### Tag Suggestions (WIP)
-- Auto complete prompt tags using a local dataset
+### Tag Suggestions
+- Auto complete prompt tags using a local dataset, directly inside the prompt field
 
 ## Setup
 Clone the repository and run the maintainer script to install SDUnity under `/opt/SDUnity` with its own virtual environment:
