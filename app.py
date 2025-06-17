@@ -131,7 +131,7 @@ with gr.Blocks(theme=theme, css=css) as demo:
     with gr.Tabs():
         with gr.TabItem("Generation"):
             with gr.Row():
-                with gr.Column(scale=2):
+                with gr.Column(scale=3):
                     with gr.Group(elem_id="prompt_wrapper"):
                         prompt = gr.Textbox(label="Prompt", lines=2, elem_id="prompt_box")
                         tag_suggestions = gr.Dropdown(
@@ -170,49 +170,46 @@ with gr.Blocks(theme=theme, css=css) as demo:
                             visible=False,
                             container=False,
                         )
+                with gr.Column(scale=3):
                     negative_prompt = gr.Textbox(label="Negative Prompt", lines=2)
+                with gr.Column(scale=1):
                     preset = gr.Dropdown(
                         choices=list(presets.PRESETS.keys()),
                         label="Preset",
                         value=None,
                     )
-                    auto_enhance_chk = gr.Checkbox(
-                        label="Auto Enhance Prompt", value=False
-                    )
-                    generate_btn = gr.Button("Generate", variant="primary")
+                    auto_enhance_chk = gr.Checkbox(label="Auto Enhance Prompt", value=False)
 
-                with gr.Column(scale=1):
-                    with gr.Accordion("Model", open=True):
-                        categories = models.list_categories()
-                        model_category = gr.Radio(
-                            choices=categories,
-                            value=categories[0] if categories else None,
-                            label="Model Type",
-                        )
-                        model = gr.Dropdown(
-                            choices=models.list_models(
-                                categories[0] if categories else None
-                            ),
-                            label="Model",
-                        )
-                        lora = gr.Dropdown(
-                            choices=models.list_loras(), label="LoRA", multiselect=True
-                        )
-                        refresh = gr.Button("Refresh")
-                        load_btn = gr.Button("Load to VRAM", variant="primary")
-                        unload_btn = gr.Button("Unload from VRAM")
-                        load_status = gr.Markdown("")
-                        loaded_model_state = gr.State("")
+            with gr.Row():
+                categories = models.list_categories()
+                model_category = gr.Dropdown(
+                    choices=categories,
+                    value=categories[0] if categories else None,
+                    label="Model Type",
+                )
+                model = gr.Dropdown(
+                    choices=models.list_models(categories[0] if categories else None),
+                    label="Model",
+                )
+                lora = gr.Dropdown(
+                    choices=models.list_loras(), label="LoRA", multiselect=True
+                )
+                refresh = gr.Button("Refresh")
+                load_btn = gr.Button("Load to VRAM", variant="primary")
+                unload_btn = gr.Button("Unload from VRAM")
+                load_status = gr.Markdown("")
+                loaded_model_state = gr.State("")
+
+            generate_btn = gr.Button("Generate", variant="primary")
 
             with gr.Row():
                 output = gr.Image(
-                    label="Result",
-                    visible=True,
+                    label="Preview",
+                    visible=False,
                     width=384,
                     height=384,
                     elem_id="preview",
                 )
-            with gr.Row():
                 gen_gallery = gr.Gallery(
                     label="Current Batch",
                     show_label=True,
@@ -916,8 +913,18 @@ with gr.Blocks(theme=theme, css=css) as demo:
                 _save_reload, inputs=settings_inputs, outputs=save_status
             )
 
+    def _generate_with_preview(*args):
+        last = None
+        for result in generator.generate_image(*args):
+            last = result
+            img, seed_val, gallery_items, new_paths = result
+            yield gr.update(value=img, visible=True), seed_val, gallery_items, new_paths
+        if last is not None:
+            img, seed_val, gallery_items, new_paths = last
+            yield gr.update(visible=False), seed_val, gallery_items, new_paths
+
     generate_btn.click(
-        generator.generate_image,
+        _generate_with_preview,
         inputs=[
             prompt,
             negative_prompt,
@@ -1038,13 +1045,13 @@ with gr.Blocks(theme=theme, css=css) as demo:
 
     def _select_gen_image(evt: gr.SelectData, paths):
         if evt.index is None or evt.index >= len(paths):
-            return None
+            return gr.update(visible=False)
         path = paths[evt.index]
         try:
             img = Image.open(path)
         except Exception:
             img = None
-        return img
+        return gr.update(value=img, visible=True)
 
     gen_gallery.select(
         _select_gen_image,
