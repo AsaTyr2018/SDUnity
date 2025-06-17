@@ -104,7 +104,7 @@ with gr.Blocks(theme=theme, css=css) as demo:
         with gr.TabItem("Generation"):
             with gr.Row():
                 with gr.Column(scale=2):
-                    with gr.Box(elem_id="prompt_wrapper"):
+                    with gr.Group(elem_id="prompt_wrapper"):
                         prompt = gr.Textbox(label="Prompt", lines=2)
                         tag_suggestions = gr.Dropdown(
                             label="",
