@@ -1,4 +1,15 @@
-from . import presets, models, gallery, generator, config, civitai, bootcamp, tags, wildcards
+from . import (
+    presets,
+    models,
+    gallery,
+    generator,
+    config,
+    civitai,
+    bootcamp,
+    tags,
+    wildcards,
+    settings_presets,
+)
 
 __all__ = [
     "presets",
@@ -10,4 +21,5 @@ __all__ = [
     "bootcamp",
     "tags",
     "wildcards",
+    "settings_presets",
 ]

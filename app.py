@@ -4,7 +4,17 @@ import requests
 import gradio as gr
 from PIL import Image
 
-from sdunity import presets, models, generator, gallery, config, civitai, bootcamp, tags
+from sdunity import (
+    presets,
+    models,
+    generator,
+    gallery,
+    config,
+    civitai,
+    bootcamp,
+    tags,
+    settings_presets,
+)
 
 MAX_THUMBNAILS = 50
 
@@ -212,6 +222,18 @@ with gr.Blocks(theme=theme, css=css) as demo:
                 gen_gallery_state = gr.State([])
 
         with gr.TabItem("Generation Settings"):
+            with gr.Row():
+                settings_preset_dd = gr.Dropdown(
+                    choices=list(settings_presets.PRESETS.keys()),
+                    label="Settings Preset",
+                    value=None,
+                )
+                save_settings_preset_btn = gr.Button("Save Preset")
+                remove_settings_preset_btn = gr.Button("Remove Preset")
+            with gr.Row():
+                preset_name_box = gr.Textbox(label="Preset Name", visible=False)
+                preset_confirm_btn = gr.Button("Confirm", visible=False)
+                preset_status = gr.Markdown("", visible=False)
             with gr.Row():
                 with gr.Column():
                     seed = gr.Number(
@@ -677,6 +699,115 @@ with gr.Blocks(theme=theme, css=css) as demo:
                 models.unload_pipeline(loaded)
                 return "", f"Unloaded {loaded}"
 
+            def _show_preset_prompt():
+                return (
+                    gr.update(visible=True),
+                    gr.update(visible=True),
+                    gr.update(value="", visible=True),
+                )
+
+            def _save_preset(
+                name,
+                seed_val,
+                rand,
+                step_val,
+                width_val,
+                height_val,
+                guidance_val,
+                clip_val,
+                sched,
+                prec,
+                tile_val,
+                lora_w,
+                denoise,
+                highres,
+                nsfw,
+                smooth,
+                per_batch,
+                batches,
+                category,
+                mdl,
+                lora_sel,
+            ):
+                if not name:
+                    return (
+                        gr.update(),
+                        gr.update(visible=True),
+                        gr.update(visible=True),
+                        gr.update(value="Name required", visible=True),
+                    )
+                if name in settings_presets.PRESETS:
+                    return (
+                        gr.update(),
+                        gr.update(visible=True),
+                        gr.update(visible=True),
+                        gr.update(value="Name exists", visible=True),
+                    )
+                data = {
+                    "seed": seed_val,
+                    "random_seed": bool(rand),
+                    "steps": int(step_val),
+                    "width": int(width_val),
+                    "height": int(height_val),
+                    "guidance_scale": float(guidance_val),
+                    "clip_skip": int(clip_val),
+                    "scheduler": sched,
+                    "precision": prec,
+                    "tile": bool(tile_val),
+                    "lora_weight": float(lora_w),
+                    "denoising_strength": float(denoise),
+                    "highres_fix": bool(highres),
+                    "nsfw_filter": bool(nsfw),
+                    "smooth_preview": bool(smooth),
+                    "images_per_batch": int(per_batch),
+                    "batch_count": int(batches),
+                    "model_type": category,
+                    "model": mdl,
+                    "lora": lora_sel,
+                }
+                settings_presets.add_preset(name, data)
+                return (
+                    gr.update(choices=list(settings_presets.PRESETS.keys()), value=name),
+                    gr.update(value="", visible=False),
+                    gr.update(visible=False),
+                    gr.update(value="Preset saved", visible=True),
+                )
+
+            def _load_preset(name):
+                data = settings_presets.PRESETS.get(name)
+                if not data:
+                    return [gr.update() for _ in range(20)]
+                model_choices = models.list_models(data.get("model_type"))
+                model_val = data.get("model")
+                if model_val not in model_choices:
+                    model_val = model_choices[0] if model_choices else None
+                return [
+                    data.get("seed"),
+                    data.get("random_seed"),
+                    data.get("steps"),
+                    data.get("guidance_scale"),
+                    data.get("clip_skip"),
+                    data.get("scheduler"),
+                    data.get("precision"),
+                    data.get("tile"),
+                    data.get("lora_weight"),
+                    data.get("denoising_strength"),
+                    data.get("highres_fix"),
+                    data.get("nsfw_filter"),
+                    data.get("width"),
+                    data.get("height"),
+                    data.get("smooth_preview"),
+                    data.get("images_per_batch"),
+                    data.get("batch_count"),
+                    data.get("model_type"),
+                    gr.update(choices=model_choices, value=model_val),
+                    data.get("lora"),
+                ]
+
+            def _remove_preset(name):
+                settings_presets.remove_preset(name)
+                return gr.update(choices=list(settings_presets.PRESETS.keys()), value=None)
+
             def _prompt_autocomplete(text):
                 opts = tags.suggestions_from_prompt(text)
                 return gr.update(choices=opts, value=None, visible=bool(opts))
@@ -840,6 +971,69 @@ with gr.Blocks(theme=theme, css=css) as demo:
         _apply_tag,
         inputs=[prompt, tag_suggestions],
         outputs=[prompt, tag_suggestions],
+    )
+
+    save_settings_preset_btn.click(
+        _show_preset_prompt,
+        outputs=[preset_name_box, preset_confirm_btn, preset_status],
+    )
+    preset_confirm_btn.click(
+        _save_preset,
+        inputs=[
+            preset_name_box,
+            seed,
+            random_seed_chk,
+            steps,
+            width,
+            height,
+            guidance_scale,
+            clip_skip,
+            scheduler,
+            precision_dd,
+            tile_chk,
+            lora_weight,
+            denoising_strength,
+            highres_fix_chk,
+            nsfw_filter,
+            smooth_preview_chk,
+            images_per_batch,
+            batch_count,
+            model_category,
+            model,
+            lora,
+        ],
+        outputs=[settings_preset_dd, preset_name_box, preset_confirm_btn, preset_status],
+    )
+    settings_preset_dd.change(
+        _load_preset,
+        inputs=settings_preset_dd,
+        outputs=[
+            seed,
+            random_seed_chk,
+            steps,
+            guidance_scale,
+            clip_skip,
+            scheduler,
+            precision_dd,
+            tile_chk,
+            lora_weight,
+            denoising_strength,
+            highres_fix_chk,
+            nsfw_filter,
+            width,
+            height,
+            smooth_preview_chk,
+            images_per_batch,
+            batch_count,
+            model_category,
+            model,
+            lora,
+        ],
+    )
+    remove_settings_preset_btn.click(
+        _remove_preset,
+        inputs=settings_preset_dd,
+        outputs=settings_preset_dd,
     )
 
     def _select_gen_image(evt: gr.SelectData, paths):
