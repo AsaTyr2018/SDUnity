@@ -24,8 +24,9 @@ def enhance(prompt: str, max_tokens: int = 50) -> str:
         return prompt
     _load()
     text = (
-        "Rewrite the following Stable Diffusion prompt as comma separated "
-        f"Danbooru style tags: {prompt}\nTags:"
+        "Take a short image prompt and expand it into a detailed list of descriptive tags.\n"
+        "Only return a comma-separated list of tags in Danbooru style. Do not use full sentences.\n\n"
+        f"{prompt}\nTags:"
     )
     result = _pipeline(text, max_new_tokens=max_tokens, do_sample=False)
     generated = result[0]["generated_text"]
