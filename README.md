@@ -45,8 +45,10 @@ The UI is split into tabs for generation, model management, a gallery, a Bootcam
 - View metadata such as prompt, model, LoRA and seed
 - Delete unwanted images
 
-### Bootcamp (WIP)
-- Minimal interface to launch LoRA training using the diffusers DreamBooth script
+### Bootcamp
+- Step‑by‑step LoRA trainer with project folders
+- Upload zipped datasets and manage tags without showing images
+- Suggested training parameters based on dataset size
 
 ### Civitai Integration
 - Search Civitai with dedicated tags for SD 1.5, SDXL and Pony models
