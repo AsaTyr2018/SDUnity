@@ -19,6 +19,7 @@ _TOP_K = int(os.getenv("SDUNITY_GPT2_TOP_K", "100"))
 
 _allowed_tokens: Set[int] | None = None
 _logits_processor: LogitsProcessor | None = None
+_tokenizer = None
 
 _pipeline = None
 _loaded_model = None
@@ -61,6 +62,8 @@ def _load(model_name: str | None = None):
         tokenizer = AutoTokenizer.from_pretrained(name)
         model = AutoModelForCausalLM.from_pretrained(name)
         _pipeline = pipeline("text-generation", model=model, tokenizer=tokenizer)
+        global _tokenizer
+        _tokenizer = tokenizer
         _loaded_model = name
 
         _allowed_tokens = None
@@ -121,4 +124,13 @@ def enhance(prompt: str, max_tokens: int = 50, seed: int | None = None) -> str:
             seen.add(item)
 
     final_text = ", ".join(tags) if tags else prompt
-    return _cleanup_prompt(final_text)
+    final_text = _cleanup_prompt(final_text)
+
+    if _tokenizer is not None:
+        ids = _tokenizer.encode(final_text, add_special_tokens=False)
+        if len(ids) > 75:
+            ids = ids[:75]
+            final_text = _tokenizer.decode(ids)
+            final_text = _cleanup_prompt(final_text)
+
+    return final_text
