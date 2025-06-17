@@ -15,7 +15,12 @@ def main() -> None:
     )
     parser.add_argument(
         "repo",
-        help="Path to the cloned a1111-sd-webui-tagcomplete repository"
+        nargs="?",
+        default=os.environ.get("TAGCOMPLETE_REPO", "data/tagcomplete"),
+        help=(
+            "Path to the cloned a1111-sd-webui-tagcomplete repository. "
+            "Defaults to $TAGCOMPLETE_REPO or 'data/tagcomplete'."
+        ),
     )
     parser.add_argument(
         "--output",

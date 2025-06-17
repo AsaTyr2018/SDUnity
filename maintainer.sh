@@ -49,6 +49,19 @@ fix_permissions() {
     chmod -R u+rwX,go+rX "$TARGET_DIR"
 }
 
+clone_tagcomplete_repo() {
+    local repo_dir="$TARGET_DIR/tagcomplete"
+    if [ -d "$repo_dir/.git" ]; then
+        git -C "$repo_dir" pull
+    else
+        git clone "https://github.com/DominikDoom/a1111-sd-webui-tagcomplete.git" "$repo_dir"
+    fi
+}
+
+update_tag_dataset() {
+    "$VENV_DIR/bin/python" "$TARGET_DIR/scripts/import_tagcomplete.py" "$TARGET_DIR/tagcomplete" --output "$TARGET_DIR/data/all_tags.csv"
+}
+
 install_sdunity() {
     check_deps
     if [ -d "$TARGET_DIR/.git" ]; then
@@ -59,6 +72,8 @@ install_sdunity() {
     fi
     ensure_venv
     "$VENV_DIR/bin/pip" install -r "$TARGET_DIR/requirements.txt"
+    clone_tagcomplete_repo
+    update_tag_dataset
     fix_permissions
     echo "Installation completed."
 }
@@ -73,6 +88,8 @@ update_sdunity() {
     git pull
     ensure_venv
     "$VENV_DIR/bin/pip" install -r requirements.txt
+    clone_tagcomplete_repo
+    update_tag_dataset
     fix_permissions
     echo "Update completed."
 }
