@@ -20,7 +20,7 @@ The interface uses a modern dark theme and is divided into five main tabs:
 - NSFW filter toggle
 - Multiple images per batch and batch repetition
 - Selectable prompt presets
-- Optional GPT-2 based prompt enhancement
+- Optional GPT-2 based prompt enhancement with deduplication
 - Choice of sampler and precision
 - LoRA weight slider and tiling option
 - Denoising strength control
@@ -71,7 +71,8 @@ The interface runs on `http://localhost:7860/` by default. Gradio launch options
 Prompt presets live in `presets.txt` and can be selected from the dropdown in the Generation tab.
 
 Setting the environment variable `SDUNITY_GPT2_MODEL` allows choosing a different GPT-2
-checkpoint for the auto enhancement feature.
+checkpoint for the auto enhancement feature. The generator now removes duplicate
+tags automatically.
 
 LoRA support relies on the [peft](https://github.com/huggingface/peft) package. If you install
 SDUnity manually, make sure all dependencies from `requirements.txt` are installed with
