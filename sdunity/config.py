@@ -5,9 +5,11 @@ import json
 MODELS_DIR = "models"
 LORA_DIR = "loras"
 GENERATIONS_DIR = "generations"
+WILDCARDS_DIR = "wildcards"
 
-# Ensure generations directory exists
+# Ensure output directories exist
 os.makedirs(GENERATIONS_DIR, exist_ok=True)
+os.makedirs(WILDCARDS_DIR, exist_ok=True)
 
 # ---------------------------------------------------------------------------
 # Gradio Launch Configuration
