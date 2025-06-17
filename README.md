@@ -20,6 +20,7 @@ The interface uses a modern dark theme and is divided into five main tabs:
 - NSFW filter toggle
 - Multiple images per batch and batch repetition
 - Selectable prompt presets
+- Optional GPT-2 based prompt enhancement
 - Choice of sampler and precision
 - LoRA weight slider and tiling option
 - Denoising strength control
@@ -68,6 +69,9 @@ Start the web interface with:
 The interface runs on `http://localhost:7860/` by default. Gradio launch options can be adjusted from the Settings tab or by editing `sdunity/config.py` under `GRADIO_LAUNCH_CONFIG`.
 
 Prompt presets live in `presets.txt` and can be selected from the dropdown in the Generation tab.
+
+Setting the environment variable `SDUNITY_GPT2_MODEL` allows choosing a different GPT-2
+checkpoint for the auto enhancement feature.
 
 LoRA support relies on the [peft](https://github.com/huggingface/peft) package. If you install
 SDUnity manually, make sure all dependencies from `requirements.txt` are installed with

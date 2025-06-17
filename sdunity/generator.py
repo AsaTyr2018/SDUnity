@@ -13,7 +13,7 @@ from diffusers import (
     DPMSolverMultistepScheduler,
 )
 
-from . import presets, models, gallery
+from . import presets, models, gallery, enhancer
 from transformers.modeling_outputs import BaseModelOutputWithPooling
 
 
@@ -57,6 +57,7 @@ def generate_image(
     images_per_batch: int,
     batch_count: int,
     preset: str,
+    auto_enhance: bool,
     smooth_preview: bool,
     scheduler: str,
     precision: str,
@@ -90,6 +91,8 @@ def generate_image(
         Denoising strength for future image-to-image support.
     highres_fix : bool
         Apply a high resolution pass when enabled.
+    auto_enhance : bool
+        Improve the prompt using an offline GPT-2 model before generation.
     """
     if random_seed or seed is None:
         seed = random.randint(0, 2**32 - 1)
@@ -103,6 +106,12 @@ def generate_image(
         enhancement = presets.PRESETS.get(preset)
         if enhancement:
             prompt = f"{prompt}, {enhancement}"
+
+    if auto_enhance:
+        try:
+            prompt = enhancer.enhance(prompt)
+        except Exception:
+            pass
 
     pipe = models.get_pipeline(model, progress=progress, category=model_type)
 
