@@ -123,13 +123,42 @@ with gr.Blocks(theme=theme, css=css) as demo:
             with gr.Row():
                 with gr.Column(scale=2):
                     with gr.Group(elem_id="prompt_wrapper"):
-                        prompt = gr.Textbox(label="Prompt", lines=2)
+                        prompt = gr.Textbox(label="Prompt", lines=2, elem_id="prompt_box")
                         tag_suggestions = gr.Dropdown(
                             label="",
                             choices=[],
                             visible=False,
                             container=False,
                             elem_id="tag_suggestions",
+                        )
+                        gr.HTML(
+                            """
+                            <script>
+                            document.addEventListener('DOMContentLoaded', () => {
+                                function attach() {
+                                    const prompt = document.querySelector('#prompt_box textarea, #prompt_box input');
+                                    const sugg = document.querySelector('#tag_suggestions select');
+                                    if (!prompt || !sugg) return false;
+                                    prompt.addEventListener('keydown', (e) => {
+                                        if (e.key === 'Tab' && sugg.options.length) {
+                                            e.preventDefault();
+                                            sugg.value = sugg.options[0].value;
+                                            sugg.dispatchEvent(new Event('change', {bubbles: true}));
+                                        }
+                                    });
+                                    return true;
+                                }
+                                if (!attach()) {
+                                    const iv = setInterval(() => {
+                                        if (attach()) clearInterval(iv);
+                                    }, 500);
+                                }
+                            });
+                            </script>
+                            """,
+                            elem_id="prompt_js",
+                            visible=False,
+                            container=False,
                         )
                     negative_prompt = gr.Textbox(label="Negative Prompt", lines=2)
                     preset = gr.Dropdown(
