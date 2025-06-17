@@ -2,6 +2,7 @@ import os
 import bisect
 import re
 import csv
+from rapidfuzz import process
 
 _TAG_FILE = os.path.join("data", "all_tags.csv")
 
@@ -49,10 +50,9 @@ def load_tagcomplete_tags(repo_path: str) -> set[str]:
 
 
 def update_dataset_from_tagcomplete(repo_path: str, output_path: str = _TAG_FILE) -> None:
-    """Merge tags from tagcomplete repo with existing dataset."""
-    current_tags = set(_load_csv_tags(output_path))
-    current_tags.update(load_tagcomplete_tags(repo_path))
-    _save_csv_tags(current_tags, output_path)
+    """Generate the dataset from the tagcomplete repository."""
+    tags = load_tagcomplete_tags(repo_path)
+    _save_csv_tags(tags, output_path)
 
 
 # Load and sort tags on import for fast lookup
@@ -74,6 +74,10 @@ def suggestions(prefix: str, limit: int = 10) -> list[str]:
         if len(result) >= limit:
             break
         idx += 1
+    if len(result) < limit:
+        # Fuzzy search for additional results
+        fuzzy = process.extract(prefix, _TAGS, limit=limit - len(result))
+        result.extend([m[0] for m in fuzzy if m[0] not in result])
     return result
 
 
