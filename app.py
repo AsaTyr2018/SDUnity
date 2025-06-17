@@ -106,6 +106,9 @@ with gr.Blocks(theme=theme, css=css) as demo:
                         label="Preset",
                         value=None,
                     )
+                    auto_enhance_chk = gr.Checkbox(
+                        label="Auto Enhance Prompt", value=False
+                    )
                     generate_btn = gr.Button("Generate", variant="primary")
 
                 with gr.Column(scale=1):
@@ -741,6 +744,7 @@ with gr.Blocks(theme=theme, css=css) as demo:
             images_per_batch,
             batch_count,
             preset,
+            auto_enhance_chk,
             smooth_preview_chk,
             scheduler,
             precision_dd,
