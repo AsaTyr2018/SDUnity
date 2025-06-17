@@ -244,7 +244,6 @@ def generate_image(
                 height=int(height),
                 num_inference_steps=int(steps),
                 generator=gens,
-                num_images_per_prompt=int(images_per_batch),
                 guidance_scale=float(guidance_scale),
             )
 
