@@ -69,6 +69,10 @@ The interface runs on `http://localhost:7860/` by default. Gradio launch options
 
 Prompt presets live in `presets.txt` and can be selected from the dropdown in the Generation tab.
 
+LoRA support relies on the [peft](https://github.com/huggingface/peft) package. If you install
+SDUnity manually, make sure all dependencies from `requirements.txt` are installed with
+`pip install -r requirements.txt` so that LoRA weights load correctly.
+
 ## Maintainer Script
 
 The `maintainer.sh` script also handles updates and removal. Run it with
