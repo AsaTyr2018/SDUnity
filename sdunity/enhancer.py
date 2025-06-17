@@ -19,7 +19,7 @@ _DEFAULT_MODEL = os.getenv("SDUNITY_GPT2_MODEL", "gpt2-medium")
 # the ``SDUNITY_GPT2_POSITIVE_WORDS`` environment variable.
 _DEFAULT_POSITIVE_PATH = os.path.join(
     os.path.dirname(os.path.dirname(__file__)),
-    "models",
+    "data",
     "prompt_expansion",
     "fooocus_expansion",
     "positive.txt",
