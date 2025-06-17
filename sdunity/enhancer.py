@@ -2,7 +2,7 @@ import os
 from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
 
 # Default model name can be overridden with SDUNITY_GPT2_MODEL env var
-_DEFAULT_MODEL = os.getenv("SDUNITY_GPT2_MODEL", "gpt2")
+_DEFAULT_MODEL = os.getenv("SDUNITY_GPT2_MODEL", "gpt2-medium")
 
 _pipeline = None
 _loaded_model = None
