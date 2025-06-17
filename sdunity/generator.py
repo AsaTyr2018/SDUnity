@@ -280,7 +280,7 @@ def generate_image(
             frame = preview_queue.get()
             if frame is _STOP:
                 break
-            yield frame, base_seed, gr.update()
+            yield frame, base_seed, gr.update(), gr.update()
         thread.join()
     else:
         _run_generation()
