@@ -27,6 +27,8 @@ os.makedirs(BOOTCAMP_OUTPUT_DIR, exist_ok=True)
 # Central location for default `Blocks.launch` arguments. Adjust values here to
 # change how the Gradio server starts. See the Gradio docs for explanation of
 # each option.
+ALLOWED_PATHS = [GENERATIONS_DIR, BOOTCAMP_DIR]
+
 GRADIO_LAUNCH_CONFIG = {
     # Networking
     "server_name": "0.0.0.0",  # listen on all interfaces
@@ -48,6 +50,7 @@ GRADIO_LAUNCH_CONFIG = {
     # Miscellaneous
     "quiet": False,            # reduce terminal output
     "show_api": True,          # expose REST API docs
+    "allowed_paths": ALLOWED_PATHS,  # directories accessible via /file=
 }
 
 # ---------------------------------------------------------------------------

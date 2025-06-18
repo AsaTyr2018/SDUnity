@@ -941,6 +941,8 @@ with gr.Blocks(theme=theme, css=css) as demo:
 
             with gr.Accordion("Server Options", open=False):
                 for k, default in config.GRADIO_LAUNCH_CONFIG.items():
+                    if k == "allowed_paths":
+                        continue
                     val = config.USER_CONFIG.get(k, default)
                     help_txt = {
                         "server_name": "Network interface to bind",
@@ -976,6 +978,8 @@ with gr.Blocks(theme=theme, css=css) as demo:
                 cfg = {"civitai_api_key": vals[0]}
                 idx = 1
                 for key, default in config.GRADIO_LAUNCH_CONFIG.items():
+                    if key == "allowed_paths":
+                        continue
                     val = vals[idx]
                     idx += 1
                     if isinstance(default, bool):
