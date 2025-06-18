@@ -1092,16 +1092,22 @@ with gr.Blocks(theme=theme, css=css) as demo:
         html = bootcamp.render_tag_grid(proj)
         return data, html
 
-    def _run_autotag_ui(proj_name, prepend, append, blacklist, max_tags, thresh):
+    def _run_autotag_ui(proj_name, prepend, append, blacklist, max_tags, thresh, progress=gr.Progress()):
         proj = bootcamp.BootcampProject.load(proj_name)
         if proj is None:
             return [], "", "Project not found"
         pre = [t.strip() for t in prepend.split(",") if t.strip()]
         app = [t.strip() for t in append.split(",") if t.strip()]
-        for img in proj.images:
-            auto = [f"tag{i}" for i in range(1, min(int(max_tags), 3) + 1)]
-            proj.tags[img] = pre + auto + app
-        proj.save()
+        bl = {t.strip() for t in blacklist.split(",") if t.strip()}
+        bootcamp.auto_tag_dataset(
+            proj,
+            max_tags=int(max_tags),
+            threshold=float(thresh),
+            prepend=pre,
+            append=app,
+            blacklist=bl,
+            progress=progress,
+        )
         rows = [[img, ", ".join(proj.tags[img])] for img in proj.images]
         html = bootcamp.render_tag_grid(proj)
         return rows, html, "Auto tags generated"
