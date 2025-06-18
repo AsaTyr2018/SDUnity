@@ -831,17 +831,22 @@ with gr.Blocks(theme=theme, css=css) as demo:
                     bc_file_count = gr.Number(label="Image Count", value=0, interactive=False)
                     bc_upload_msg = gr.Markdown()
                 with gr.TabItem("3. Tagging"):
+                    bc_autotag_open = gr.Button("Auto-Tagging", variant="secondary")
+                    bc_download_ds = gr.Button("Download Dataset")
+                    bc_reset_proj = gr.Button("Reset Project")
+                    bc_download_out = gr.File(label="Dataset Zip", visible=False)
+                    with gr.Column(visible=False) as bc_autotag_popup:
+                        bc_max_tags = gr.Number(label="Max Tags", value=5, precision=0)
+                        bc_thresh = gr.Number(label="Min Threshold", value=0.35)
+                        bc_blacklist = gr.Textbox(label="Blacklist")
+                        bc_prepend = gr.Textbox(label="Prepend Tags")
+                        bc_append = gr.Textbox(label="Append Tags")
+                        bc_run_autotag = gr.Button("Run Auto-Tagging")
+                        bc_autotag_close = gr.Button("Close")
+                        bc_autotag_msg = gr.Markdown()
                     bc_tags_df = gr.Dataframe(headers=["Image", "Tags"], datatype=["str", "str"], row_count=0)
                     bc_save_tags = gr.Button("Save Tags")
                     bc_tag_view = gr.Dataframe(headers=["Tag", "Count"], datatype=["str", "int"], interactive=False)
-                with gr.TabItem("4. Auto-Tagging"):
-                    bc_max_tags = gr.Number(label="Max Tags", value=5, precision=0)
-                    bc_thresh = gr.Number(label="Min Threshold", value=0.35)
-                    bc_blacklist = gr.Textbox(label="Blacklist")
-                    bc_prepend = gr.Textbox(label="Prepend Tags")
-                    bc_append = gr.Textbox(label="Append Tags")
-                    bc_run_autotag = gr.Button("Run Auto-Tagging")
-                    bc_autotag_msg = gr.Markdown()
                 with gr.TabItem("5. Review & Train"):
                     bc_review = gr.Markdown()
                     bc_model_select = gr.Radio(["SD 1.5", "SDXL", "Pony"], label="Model", value="SD 1.5")
@@ -1018,6 +1023,27 @@ with gr.Blocks(theme=theme, css=css) as demo:
         rows = [[img, ", ".join(proj.tags[img])] for img in proj.images]
         return rows, "Auto tags generated"
 
+    def _export_dataset_ui(proj_name):
+        proj = bootcamp.BootcampProject.load(proj_name)
+        if proj is None:
+            return None
+        out_path = os.path.join(config.BOOTCAMP_OUTPUT_DIR, f"{proj.name}.zip")
+        bootcamp.export_dataset(proj, out_path)
+        return out_path
+
+    def _reset_project_ui(proj_name):
+        proj = bootcamp.BootcampProject.load(proj_name)
+        if proj is None:
+            return []
+        bootcamp.reset_project(proj)
+        return []
+
+    def _show_autotag_ui():
+        return gr.update(visible=True)
+
+    def _hide_autotag_ui():
+        return gr.update(visible=False)
+
     def _review_ui(proj_name, model_type):
         proj = bootcamp.BootcampProject.load(proj_name)
         if proj is None:
@@ -1048,6 +1074,18 @@ with gr.Blocks(theme=theme, css=css) as demo:
         inputs=[bc_project, bc_tags_df],
         outputs=bc_tag_view,
     )
+    bc_download_ds.click(
+        _export_dataset_ui,
+        inputs=bc_project,
+        outputs=bc_download_out,
+    )
+    bc_reset_proj.click(
+        _reset_project_ui,
+        inputs=bc_project,
+        outputs=bc_tags_df,
+    )
+    bc_autotag_open.click(_show_autotag_ui, outputs=bc_autotag_popup)
+    bc_autotag_close.click(_hide_autotag_ui, outputs=bc_autotag_popup)
     bc_run_autotag.click(
         _run_autotag_ui,
         inputs=[bc_project, bc_prepend, bc_append, bc_blacklist, bc_max_tags, bc_thresh],
