@@ -1,7 +1,8 @@
+
+import os
 import gradio as gr
 
-from . import bootcamp
-
+from . import bootcamp, config
 
 def create_training_wizard() -> gr.Blocks:
     """Return a simple three-step LoRA training wizard."""
@@ -38,8 +39,25 @@ def create_training_wizard() -> gr.Blocks:
                     file_types=["image", ".zip"],
                 )
                 upload_btn = gr.Button("Upload")
-                autotag_btn = gr.Button("Auto Tag", variant="secondary")
+
                 grid = gr.HTML()
+                tags_df = gr.Dataframe(
+                    headers=["Image", "Tags"],
+                    datatype=["str", "str"],
+                    row_count=0,
+                )
+                with gr.Accordion("Auto Tagging", open=False):
+                    at_pre = gr.Textbox(label="Prepend Tags")
+                    at_app = gr.Textbox(label="Append Tags")
+                    at_black = gr.Textbox(label="Blacklist")
+                    at_max = gr.Number(label="Max Tags", value=5, precision=0)
+                    at_thresh = gr.Number(label="Min Threshold", value=0.35)
+                    run_autotag_btn = gr.Button("Run Auto-Tagging")
+                    at_msg = gr.Markdown()
+                save_tags_btn = gr.Button("Save Tags")
+                export_btn = gr.Button("Download Dataset")
+                dataset_file = gr.File(label="Dataset Zip", visible=False)
+                reset_btn = gr.Button("Reset")
                 msg = gr.Markdown()
                 back_btn2 = gr.Button("Back")
                 next_btn2 = gr.Button("Next", variant="primary")
@@ -66,7 +84,9 @@ def create_training_wizard() -> gr.Blocks:
         def _upload(proj_name, files):
             proj = bootcamp.BootcampProject.load(proj_name)
             if proj is None:
-                return "", "Project not found", "### Step 2 of 3", 2
+
+                return [], "", "Project not found", "### Step 2 of 3", 2
+
             uploads = []
             if files:
                 if isinstance(files, list):
@@ -74,16 +94,29 @@ def create_training_wizard() -> gr.Blocks:
                 else:
                     uploads = [files]
             count = bootcamp.import_uploads(proj, uploads)
-            html = bootcamp.render_tag_grid(proj)
-            return html, f"Imported {count} images", "### Step 3 of 3", 3
 
-        def _autotag(proj_name):
+            rows = [[img, ", ".join(proj.tags.get(img, []))] for img in proj.images]
+            html = bootcamp.render_tag_grid(proj)
+            return rows, html, f"Imported {count} images", "### Step 2 of 3", 2
+
+        def _autotag(proj_name, pre, app, black, max_tags, thresh):
             proj = bootcamp.BootcampProject.load(proj_name)
             if proj is None:
-                return "", "Project not found"
-            bootcamp.auto_tag_dataset(proj)
+                return [], "", "Project not found"
+            pre_list = [t.strip() for t in pre.split(',') if t.strip()]
+            app_list = [t.strip() for t in app.split(',') if t.strip()]
+            bl_set = {t.strip() for t in black.split(',') if t.strip()}
+            bootcamp.auto_tag_dataset(
+                proj,
+                max_tags=int(max_tags or 0),
+                threshold=float(thresh or 0),
+                prepend=pre_list,
+                append=app_list,
+                blacklist=bl_set,
+            )
+            rows = [[img, ", ".join(proj.tags.get(img, []))] for img in proj.images]
             html = bootcamp.render_tag_grid(proj)
-            return html, "Auto tags generated"
+            return rows, html, "Auto tags generated"
 
         def _next_from_data(proj_name):
             proj = bootcamp.BootcampProject.load(proj_name)
@@ -106,6 +139,34 @@ def create_training_wizard() -> gr.Blocks:
                 return
             yield from bootcamp.run_training(proj, model_type, steps, lr)
 
+        def _save_tags(proj_name, rows):
+            proj = bootcamp.BootcampProject.load(proj_name)
+            if proj is None:
+                return [], "", "Project not found"
+            for img, tag_str in rows:
+                proj.tags[img] = [t.strip() for t in str(tag_str).split(',') if t.strip()]
+            proj.save()
+            rows = [[img, ", ".join(proj.tags[img])] for img in proj.images]
+            html = bootcamp.render_tag_grid(proj)
+            return rows, html, "Tags saved"
+
+        def _export_ds(proj_name):
+            proj = bootcamp.BootcampProject.load(proj_name)
+            if proj is None:
+                return None
+            out_path = os.path.join(config.BOOTCAMP_OUTPUT_DIR, f"{proj.name}.zip")
+            bootcamp.export_dataset(proj, out_path)
+            return out_path
+
+        def _reset_ds(proj_name):
+            proj = bootcamp.BootcampProject.load(proj_name)
+            if proj is None:
+                return [], "", "", None
+            bootcamp.reset_project(proj)
+            rows = []
+            html = bootcamp.render_tag_grid(proj)
+            return rows, html, "", None
+
         create_btn.click(
             _create_project,
             inputs=[wiz_type, wiz_name],
@@ -121,10 +182,26 @@ def create_training_wizard() -> gr.Blocks:
         upload_btn.click(
             _upload,
             inputs=[project_state, upload_in],
-            outputs=[grid, msg, progress, step_state],
-            js="(grid,msg,prog,step)=>{wizTab('wiz_train_tab');}"
+
+            outputs=[tags_df, grid, msg, progress, step_state],
         )
-        autotag_btn.click(_autotag, inputs=project_state, outputs=[grid, msg])
+        run_autotag_btn.click(
+            _autotag,
+            inputs=[project_state, at_pre, at_app, at_black, at_max, at_thresh],
+            outputs=[tags_df, grid, at_msg],
+        )
+        save_tags_btn.click(
+            _save_tags,
+            inputs=[project_state, tags_df],
+            outputs=[tags_df, grid, msg],
+        )
+        export_btn.click(_export_ds, inputs=project_state, outputs=dataset_file)
+        reset_btn.click(
+            _reset_ds,
+            inputs=project_state,
+            outputs=[tags_df, grid, msg, dataset_file],
+        )
+
         back_btn2.click(lambda: ("### Step 1 of 3", 1), outputs=[progress, step_state], js="wizTab('wiz_setup_tab')")
         next_btn2.click(
             _next_from_data,
