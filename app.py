@@ -1085,7 +1085,16 @@ with gr.Blocks(theme=theme, css=css) as demo:
     def _create_project_ui(lora_type, name):
         if not name:
             return None, "Please provide a project name.", False, "### Step 1 of 5", 1
-        proj = bootcamp.create_project(name, lora_type)
+        try:
+            proj = bootcamp.create_project(name, lora_type)
+        except Exception as exc:
+            return (
+                None,
+                f"Error creating project: {exc}",
+                False,
+                "### Step 1 of 5",
+                1,
+            )
         return proj.name, f"Created project `{name}`", True, "### Step 2 of 5", 2
 
     def _upload_files_ui(proj_name, upload_files):
