@@ -47,7 +47,9 @@ The UI is split into tabs for generation, model management, a gallery, a Bootcam
 
 ### Bootcamp (Strongly WIP - Not Functional atm.)
 - Step‑by‑step LoRA trainer with project folders
-- Upload zipped datasets and manage tags without showing images
+- Upload zipped datasets and manage tags with image previews
+- Tags appear as dynamic buttons for bulk operations
+- Separate pages for Training Parameters and Review & Start Training
 - Suggested training parameters based on dataset size
 
 ### Civitai Integration

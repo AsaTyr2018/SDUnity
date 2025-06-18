@@ -124,6 +124,32 @@ body {
     right: 0;
     z-index: 10;
 }
+
+# Bootcamp grid
+#bc_grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
+    gap: 8px;
+}
+.bc_item img {
+    width: 128px !important;
+    height: 128px !important;
+    object-fit: cover;
+    display: block;
+    margin-bottom: 4px;
+}
+.bc_tags button {
+    margin: 0 2px 2px 0;
+    padding: 2px 4px;
+    font-size: 0.8em;
+    background: #333;
+    border: 1px solid #555;
+    border-radius: 4px;
+    cursor: pointer;
+}
+.bc_tags button.selected {
+    background: #6b7280;
+}
 """
 with gr.Blocks(theme=theme, css=css) as demo:
     gr.Markdown("# SDUnity")
@@ -844,17 +870,20 @@ with gr.Blocks(theme=theme, css=css) as demo:
                         bc_run_autotag = gr.Button("Run Auto-Tagging")
                         bc_autotag_close = gr.Button("Close")
                         bc_autotag_msg = gr.Markdown()
-                    bc_tags_df = gr.Dataframe(headers=["Image", "Tags"], datatype=["str", "str"], row_count=0)
+                    bc_tags_grid = gr.HTML()
+                    bc_tags_df = gr.Dataframe(headers=["Image", "Tags"], datatype=["str", "str"], row_count=0, visible=False)
                     bc_save_tags = gr.Button("Save Tags")
+                    bc_selected_tags = gr.Textbox(label="Selected Tags", interactive=False, elem_id="bc_selected_tags")
                     bc_tag_view = gr.Dataframe(headers=["Tag", "Count"], datatype=["str", "int"], interactive=False)
-                with gr.TabItem("5. Review & Train"):
-                    bc_review = gr.Markdown()
+                with gr.TabItem("5. Training Parameters"):
                     bc_model_select = gr.Radio(["SD 1.5", "SDXL", "Pony"], label="Model", value="SD 1.5")
                     bc_steps = gr.Number(label="Steps", value=1000, precision=0)
                     bc_lr = gr.Number(label="Learning Rate", value=1e-4)
                     bc_prompt1 = gr.Textbox(label="Image #1", value="Automatically set")
                     bc_prompt2 = gr.Textbox(label="Image #2")
                     bc_prompt3 = gr.Textbox(label="Image #3")
+                with gr.TabItem("6. Review and Start Training"):
+                    bc_review = gr.Markdown()
                     bc_train = gr.Button("Start Training", variant="primary")
                 bc_log = gr.Markdown()
 
@@ -992,28 +1021,30 @@ with gr.Blocks(theme=theme, css=css) as demo:
 
     def _upload_zip_ui(proj_name, zip_file):
         if not proj_name or zip_file is None:
-            return 0, [], "No project or file uploaded"
+            return 0, [], "", "No project or file uploaded"
         proj = bootcamp.BootcampProject.load(proj_name)
         if proj is None:
-            return 0, [], "Project not found"
+            return 0, [], "", "Project not found"
         count = bootcamp.import_zip(proj, zip_file.name)
         rows = [[img, ""] for img in proj.images]
-        return count, rows, f"Imported {count} images"
+        html = bootcamp.render_tag_grid(proj)
+        return count, rows, html, f"Imported {count} images"
 
     def _save_tags_ui(proj_name, rows):
         proj = bootcamp.BootcampProject.load(proj_name)
         if proj is None:
-            return []
+            return [], ""
         for img, tag_str in rows:
             proj.tags[img] = [t.strip() for t in str(tag_str).split(",") if t.strip()]
         proj.save()
         data = [[k, v] for k, v in bootcamp.tag_summary(proj).items()]
-        return data
+        html = bootcamp.render_tag_grid(proj)
+        return data, html
 
     def _run_autotag_ui(proj_name, prepend, append, blacklist, max_tags, thresh):
         proj = bootcamp.BootcampProject.load(proj_name)
         if proj is None:
-            return [], "Project not found"
+            return [], "", "Project not found"
         pre = [t.strip() for t in prepend.split(",") if t.strip()]
         app = [t.strip() for t in append.split(",") if t.strip()]
         for img in proj.images:
@@ -1021,7 +1052,8 @@ with gr.Blocks(theme=theme, css=css) as demo:
             proj.tags[img] = pre + auto + app
         proj.save()
         rows = [[img, ", ".join(proj.tags[img])] for img in proj.images]
-        return rows, "Auto tags generated"
+        html = bootcamp.render_tag_grid(proj)
+        return rows, html, "Auto tags generated"
 
     def _export_dataset_ui(proj_name):
         proj = bootcamp.BootcampProject.load(proj_name)
@@ -1034,9 +1066,9 @@ with gr.Blocks(theme=theme, css=css) as demo:
     def _reset_project_ui(proj_name):
         proj = bootcamp.BootcampProject.load(proj_name)
         if proj is None:
-            return []
+            return [], ""
         bootcamp.reset_project(proj)
-        return []
+        return [], ""
 
     def _show_autotag_ui():
         return gr.update(visible=True)
@@ -1067,12 +1099,12 @@ with gr.Blocks(theme=theme, css=css) as demo:
     bc_upload.click(
         _upload_zip_ui,
         inputs=[bc_project, bc_zip],
-        outputs=[bc_file_count, bc_tags_df, bc_upload_msg],
+        outputs=[bc_file_count, bc_tags_df, bc_tags_grid, bc_upload_msg],
     )
     bc_save_tags.click(
         _save_tags_ui,
         inputs=[bc_project, bc_tags_df],
-        outputs=bc_tag_view,
+        outputs=[bc_tag_view, bc_tags_grid],
     )
     bc_download_ds.click(
         _export_dataset_ui,
@@ -1082,14 +1114,14 @@ with gr.Blocks(theme=theme, css=css) as demo:
     bc_reset_proj.click(
         _reset_project_ui,
         inputs=bc_project,
-        outputs=bc_tags_df,
+        outputs=[bc_tags_df, bc_tags_grid],
     )
     bc_autotag_open.click(_show_autotag_ui, outputs=bc_autotag_popup)
     bc_autotag_close.click(_hide_autotag_ui, outputs=bc_autotag_popup)
     bc_run_autotag.click(
         _run_autotag_ui,
         inputs=[bc_project, bc_prepend, bc_append, bc_blacklist, bc_max_tags, bc_thresh],
-        outputs=[bc_tags_df, bc_autotag_msg],
+        outputs=[bc_tags_df, bc_tags_grid, bc_autotag_msg],
     )
     bc_model_select.change(
         _review_ui,
