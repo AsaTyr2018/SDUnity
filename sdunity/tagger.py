@@ -11,8 +11,15 @@ class WD14Tagger:
     """Tag images using the WD14 anime tagging model."""
 
     def __init__(self, model_name: str = "SmilingWolf/wd-v1-4-swinv2-tagger-v2") -> None:
-        self.processor = AutoImageProcessor.from_pretrained(model_name)
-        self.model = AutoModelForImageClassification.from_pretrained(model_name)
+        # ``SmilingWolf/wd-v1-4-swinv2-tagger-v2`` relies on custom code stored
+        # in the model repository. ``transformers`` requires ``trust_remote_code``
+        # to load such models correctly.
+        self.processor = AutoImageProcessor.from_pretrained(
+            model_name, trust_remote_code=True
+        )
+        self.model = AutoModelForImageClassification.from_pretrained(
+            model_name, trust_remote_code=True
+        )
         self.labels = [self.model.config.id2label[i] for i in range(len(self.model.config.id2label))]
         device = "cuda" if torch.cuda.is_available() else "cpu"
         self.model.to(device)
