@@ -856,6 +856,9 @@ with gr.Blocks(theme=theme, css=css) as demo:
 
         with gr.TabItem("Bootcamp"):
             bc_project = gr.State()
+            bc_nav = gr.State(False)
+            bc_step = gr.State(1)
+            bc_progress = gr.Markdown("### Step 1 of 5", elem_id="bc_progress")
             gr.HTML(
                 """
                 <script>
@@ -1081,35 +1084,35 @@ with gr.Blocks(theme=theme, css=css) as demo:
 
     def _create_project_ui(lora_type, name):
         if not name:
-            return None, "Please provide a project name."
+            return None, "Please provide a project name.", False, "### Step 1 of 5", 1
         proj = bootcamp.create_project(name, lora_type)
-        return proj.name, f"Created project `{name}`"
+        return proj.name, f"Created project `{name}`", True, "### Step 2 of 5", 2
 
     def _upload_files_ui(proj_name, upload_files):
         if not proj_name or not upload_files:
-            return 0, [], "", "No project or file uploaded"
+            return 0, [], "", "No project or file uploaded", False, "### Step 2 of 5", 2
         if isinstance(upload_files, str):
             uploads = [upload_files]
         else:
             uploads = [f.name for f in upload_files] if hasattr(upload_files, "__iter__") else [upload_files.name]
         proj = bootcamp.BootcampProject.load(proj_name)
         if proj is None:
-            return 0, [], "", "Project not found"
+            return 0, [], "", "Project not found", False, "### Step 2 of 5", 2
         count = bootcamp.import_uploads(proj, uploads)
         rows = [[img, ""] for img in proj.images]
         html = bootcamp.render_tag_grid(proj)
-        return count, rows, html, f"Imported {count} images"
+        return count, rows, html, f"Imported {count} images", True, "### Step 3 of 5", 3
 
     def _save_tags_ui(proj_name, rows):
         proj = bootcamp.BootcampProject.load(proj_name)
         if proj is None:
-            return [], ""
+            return [], "", False, "### Step 3 of 5", 3
         for img, tag_str in rows:
             proj.tags[img] = [t.strip() for t in str(tag_str).split(",") if t.strip()]
         proj.save()
         data = [[k, v] for k, v in bootcamp.tag_summary(proj).items()]
         html = bootcamp.render_tag_grid(proj)
-        return data, html
+        return data, html, True, "### Step 4 of 5", 4
 
     def _run_autotag_ui(proj_name, prepend, append, blacklist, max_tags, thresh, progress=gr.Progress()):
         proj = bootcamp.BootcampProject.load(proj_name)
@@ -1167,29 +1170,75 @@ with gr.Blocks(theme=theme, css=css) as demo:
             return
         yield from bootcamp.run_training(proj, model_type, steps, lr)
 
+    def _next_from_setup(proj_name):
+        if not proj_name:
+            return "Please create a project first.", False, "### Step 1 of 5", 1
+        return "", True, "### Step 2 of 5", 2
+
+    def _next_from_upload(proj_name):
+        proj = bootcamp.BootcampProject.load(proj_name)
+        if proj is None or not proj.images:
+            return "Please upload images first.", False, "### Step 2 of 5", 2
+        return "", True, "### Step 3 of 5", 3
+
+    def _next_from_tags(proj_name):
+        proj = bootcamp.BootcampProject.load(proj_name)
+        if proj is None or not proj.images:
+            return "No dataset found.", False, "### Step 3 of 5", 3
+        return "", True, "### Step 4 of 5", 4
+
+    def _next_from_params(proj_name):
+        proj = bootcamp.BootcampProject.load(proj_name)
+        if proj is None:
+            return "Project not found", False, "### Step 4 of 5", 4
+        return "", True, "### Step 5 of 5", 5
+
     bc_create.click(
         _create_project_ui,
         inputs=[bc_type, bc_name],
-        outputs=[bc_project, bc_setup_out],
-        js="goTab('bc_upload_tab')",
+        outputs=[bc_project, bc_setup_out, bc_nav, bc_progress, bc_step],
+        js="(p,msg,nav,prog,step)=>{ if(nav){ goTab('bc_upload_tab'); } }",
     )
-    bc_next1.click(None, js="goTab('bc_upload_tab')")
+    bc_next1.click(
+        _next_from_setup,
+        inputs=bc_project,
+        outputs=[bc_setup_out, bc_nav, bc_progress, bc_step],
+        js="(msg,nav,prog,step)=>{ if(nav){ goTab('bc_upload_tab'); } }",
+    )
     bc_upload.click(
         _upload_files_ui,
         inputs=[bc_project, bc_upload_input],
-        outputs=[bc_file_count, bc_tags_df, bc_tags_grid, bc_upload_msg],
-        js="goTab('bc_tag_tab')",
+        outputs=[bc_file_count, bc_tags_df, bc_tags_grid, bc_upload_msg, bc_nav, bc_progress, bc_step],
+        js="(count,rows,grid,msg,nav,prog,step)=>{ if(nav){ goTab('bc_tag_tab'); } }",
     )
-    bc_prev2.click(None, js="goTab('bc_setup_tab')")
-    bc_next2.click(None, js="goTab('bc_tag_tab')")
+    bc_prev2.click(
+        lambda: ("### Step 1 of 5", 1),
+        outputs=[bc_progress, bc_step],
+        js="goTab('bc_setup_tab')",
+    )
+    bc_next2.click(
+        _next_from_upload,
+        inputs=bc_project,
+        outputs=[bc_upload_msg, bc_nav, bc_progress, bc_step],
+        js="(msg,nav,prog,step)=>{ if(nav){ goTab('bc_tag_tab'); } }",
+    )
     bc_save_tags.click(
         _save_tags_ui,
         inputs=[bc_project, bc_tags_df],
-        outputs=[bc_tag_view, bc_tags_grid],
-        js="goTab('bc_params_tab')",
+        outputs=[bc_tag_view, bc_tags_grid, bc_nav, bc_progress, bc_step],
+        js="(view,grid,nav,prog,step)=>{ if(nav){ goTab('bc_params_tab'); } }",
     )
-    bc_prev3.click(None, js="goTab('bc_upload_tab')")
-    bc_next3.click(None, js="goTab('bc_params_tab')")
+    bc_prev3.click(
+        lambda: ("### Step 2 of 5", 2),
+        outputs=[bc_progress, bc_step],
+        js="goTab('bc_upload_tab')",
+    )
+    bc_next3.click(
+        _next_from_tags,
+        inputs=bc_project,
+        outputs=[bc_upload_msg, bc_nav, bc_progress, bc_step],
+        js="(msg,nav,prog,step)=>{ if(nav){ goTab('bc_params_tab'); } }",
+    )
     bc_download_ds.click(
         _export_dataset_ui,
         inputs=bc_project,
@@ -1212,14 +1261,27 @@ with gr.Blocks(theme=theme, css=css) as demo:
         inputs=[bc_project, bc_model_select],
         outputs=[bc_review, bc_steps, bc_lr, bc_num_repeats],
     )
-    bc_prev4.click(None, js="goTab('bc_tag_tab')")
-    bc_next4.click(None, js="goTab('bc_review_tab')")
+    bc_prev4.click(
+        lambda: ("### Step 3 of 5", 3),
+        outputs=[bc_progress, bc_step],
+        js="goTab('bc_tag_tab')",
+    )
+    bc_next4.click(
+        _next_from_params,
+        inputs=bc_project,
+        outputs=[bc_upload_msg, bc_nav, bc_progress, bc_step],
+        js="(msg,nav,prog,step)=>{ if(nav){ goTab('bc_review_tab'); } }",
+    )
     bc_train.click(
         _train_ui,
         inputs=[bc_project, bc_model_select, bc_steps, bc_lr],
         outputs=bc_log,
     )
-    bc_prev5.click(None, js="goTab('bc_params_tab')")
+    bc_prev5.click(
+        lambda: ("### Step 4 of 5", 4),
+        outputs=[bc_progress, bc_step],
+        js="goTab('bc_params_tab')",
+    )
 
     prompt.input(_prompt_autocomplete, inputs=prompt, outputs=tag_suggestions)
     tag_suggestions.change(
