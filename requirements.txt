@@ -9,3 +9,4 @@ transformers
 requests
 peft>=0.6.0
 rapidfuzz
+timm

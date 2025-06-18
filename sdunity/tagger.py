@@ -1,0 +1,34 @@
+from __future__ import annotations
+
+"""WD14-based image tagging backend."""
+
+from PIL import Image
+import torch
+from transformers import AutoImageProcessor, AutoModelForImageClassification
+
+
+class WD14Tagger:
+    """Tag images using the WD14 anime tagging model."""
+
+    def __init__(self, model_name: str = "SmilingWolf/wd-v1-4-swinv2-tagger-v2") -> None:
+        self.processor = AutoImageProcessor.from_pretrained(model_name)
+        self.model = AutoModelForImageClassification.from_pretrained(model_name)
+        self.labels = [self.model.config.id2label[i] for i in range(len(self.model.config.id2label))]
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.model.to(device)
+        self.device = device
+
+    def tag_image(self, image: Image.Image, threshold: float = 0.35) -> list[str]:
+        """Return tags for ``image`` above ``threshold``."""
+        inputs = self.processor(images=image, return_tensors="pt").to(self.device)
+        with torch.no_grad():
+            logits = self.model(**inputs).logits
+            probs = logits.sigmoid()[0]
+        tags = [label for label, score in zip(self.labels, probs) if score.item() > threshold]
+        tags.sort()
+        return tags
+
+    def tag_file(self, path: str, threshold: float = 0.35) -> list[str]:
+        """Open image at ``path`` and return tags."""
+        img = Image.open(path).convert("RGB")
+        return self.tag_image(img, threshold)
