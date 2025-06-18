@@ -9,7 +9,6 @@ __all__ = [
     "generator",
     "config",
     "civitai",
-    "bootcamp",
     "tags",
     "wildcards",
     "settings_presets",

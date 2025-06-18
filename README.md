@@ -6,7 +6,6 @@
   - [Generator](#generator)
   - [Model Manager](#model-manager)
   - [Gallery](#gallery)
-- [Bootcamp](#bootcamp-strongly-wip)
   - [Civitai Integration](#civitai-integration)
   - [Image Tagger](#image-tagger)
   - [Tag Suggestions](#tag-suggestions)
@@ -17,7 +16,7 @@
 ## Overview
 **SDUnity** is a modern self‑hosted web interface built with [Gradio](https://www.gradio.app/) for working with Stable Diffusion models. It unifies model management, LoRA handling and a gallery into one application.
 
-The UI is split into tabs for generation, model management, a gallery, a Bootcamp tab for training and a settings page.
+The UI is split into tabs for generation, model management, a gallery and a settings page.
 
 ## Features
 ### Generator
@@ -46,13 +45,6 @@ The UI is split into tabs for generation, model management, a gallery, a Bootcam
 - View metadata such as prompt, model, LoRA and seed
 - Delete unwanted images
 
-### Bootcamp (Strongly WIP)
-Built-in LoRA trainer powered by a lightweight backend.
-- Step‑by‑step LoRA trainer with project folders
-- Upload zipped datasets and manage tags with image previews
-- Tags appear as dynamic buttons for bulk operations
-- Separate pages for Training Parameters and Review & Start Training
-- Suggested training parameters based on dataset size
 
 ### Civitai Integration
 - Search Civitai with dedicated tags for SD 1.5, SDXL and Pony models

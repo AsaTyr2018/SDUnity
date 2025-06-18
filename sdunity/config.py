@@ -10,16 +10,10 @@ LORA_DIR = os.path.join(BASE_DIR, "loras")
 GENERATIONS_DIR = os.path.join(BASE_DIR, "generations")
 WILDCARDS_DIR = os.path.join(BASE_DIR, "wildcards")
 
-# Bootcamp directories
-BOOTCAMP_DIR = os.path.join(BASE_DIR, "bootcamp")
-BOOTCAMP_PROJECTS_DIR = os.path.join(BOOTCAMP_DIR, "projects")
-BOOTCAMP_OUTPUT_DIR = os.path.join(BOOTCAMP_DIR, "loras")
 
 # Ensure output directories exist
 os.makedirs(GENERATIONS_DIR, exist_ok=True)
 os.makedirs(WILDCARDS_DIR, exist_ok=True)
-os.makedirs(BOOTCAMP_PROJECTS_DIR, exist_ok=True)
-os.makedirs(BOOTCAMP_OUTPUT_DIR, exist_ok=True)
 
 # ---------------------------------------------------------------------------
 # Gradio Launch Configuration
@@ -27,7 +21,7 @@ os.makedirs(BOOTCAMP_OUTPUT_DIR, exist_ok=True)
 # Central location for default `Blocks.launch` arguments. Adjust values here to
 # change how the Gradio server starts. See the Gradio docs for explanation of
 # each option.
-ALLOWED_PATHS = [GENERATIONS_DIR, BOOTCAMP_DIR]
+ALLOWED_PATHS = [GENERATIONS_DIR]
 
 GRADIO_LAUNCH_CONFIG = {
     # Networking
