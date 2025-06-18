@@ -7,6 +7,7 @@ import subprocess
 import zipfile
 from dataclasses import dataclass, asdict, field
 from typing import Generator
+from html import escape
 
 import gradio as gr
 
@@ -73,6 +74,37 @@ def tag_summary(proj: BootcampProject) -> dict[str, int]:
         for t in tags:
             counts[t] = counts.get(t, 0) + 1
     return counts
+
+
+def render_tag_grid(proj: BootcampProject) -> str:
+    """Return an HTML grid with image previews and tag buttons."""
+    img_dir = os.path.join(proj.path, "images")
+    html = ["<div id='bc_grid'>"]
+    for img in proj.images:
+        src = os.path.join(img_dir, img).replace("\\", "/")
+        html.append("<div class='bc_item'>")
+        html.append(f"<img src='file/{escape(src)}'/>")
+        html.append("<div class='bc_tags'>")
+        for t in proj.tags.get(img, []):
+            tag = escape(t)
+            html.append(f"<button class='bc_tag' onclick='toggleTag(this)'>{tag}</button>")
+        html.append("</div></div>")
+    html.append("</div>")
+    html.append(
+        """
+        <script>
+        window.toggleTag = function(btn) {
+            btn.classList.toggle('selected');
+            const out = document.getElementById('bc_selected_tags');
+            if(!out) return;
+            const selected = Array.from(document.querySelectorAll('.bc_tag.selected'))
+                .map(b => b.textContent.trim());
+            out.value = selected.join(', ');
+        }
+        </script>
+        """
+    )
+    return "\n".join(html)
 
 
 def suggest_params(proj: BootcampProject, model_type: str) -> dict[str, int | float]:
