@@ -127,7 +127,7 @@ def render_tag_grid(proj: BootcampProject) -> str:
     for img in proj.images:
         src = os.path.join(img_dir, img).replace("\\", "/")
         html.append("<div class='bc_item'>")
-        html.append(f"<img src='file={escape(src)}'/>")
+        html.append(f"<img src='/file={escape(src)}'/>")
         html.append("<div class='bc_tags'>")
         tags = proj.tags.get(img, [])
         if tags:
