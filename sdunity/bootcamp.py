@@ -127,11 +127,17 @@ def render_tag_grid(proj: BootcampProject) -> str:
     for img in proj.images:
         src = os.path.join(img_dir, img).replace("\\", "/")
         html.append("<div class='bc_item'>")
-        html.append(f"<img src='file/{escape(src)}'/>")
+        html.append(f"<img src='file={escape(src)}'/>")
         html.append("<div class='bc_tags'>")
-        for t in proj.tags.get(img, []):
-            tag = escape(t)
-            html.append(f"<button class='bc_tag' onclick='toggleTag(this)'>{tag}</button>")
+        tags = proj.tags.get(img, [])
+        if tags:
+            for t in tags:
+                tag = escape(t)
+                html.append(
+                    f"<button class='bc_tag' onclick='toggleTag(this)'>{tag}</button>"
+                )
+        else:
+            html.append("<span class='bc_tag_none'>No Tags</span>")
         html.append("</div></div>")
     html.append("</div>")
     html.append(
