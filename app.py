@@ -889,9 +889,10 @@ with gr.Blocks(theme=theme, css=css) as demo:
                         bc_run_autotag = gr.Button("Run Auto-Tagging")
                         bc_autotag_close = gr.Button("Close")
                         bc_autotag_msg = gr.Markdown()
-                    bc_gallery = gr.Gallery(label="Images")
+                    bc_tags_grid = gr.HTML()
                     bc_tags_df = gr.Dataframe(headers=["Image", "Tags"], datatype=["str", "str"], row_count=0, visible=False)
                     bc_save_tags = gr.Button("Save Tags")
+                    bc_selected_tags = gr.Textbox(label="Selected Tags", interactive=False, elem_id="bc_selected_tags")
                     bc_tag_view = gr.Dataframe(headers=["Tag", "Count"], datatype=["str", "int"], interactive=False)
                 with gr.TabItem("5. Training Parameters"):
                     bc_model_select = gr.Radio(["SD 1.5", "SDXL", "Pony"], label="Model", value="SD 1.5")
@@ -1077,8 +1078,8 @@ with gr.Blocks(theme=theme, css=css) as demo:
             return 0, [], "", "Project not found"
         count = bootcamp.import_uploads(proj, uploads)
         rows = [[img, ""] for img in proj.images]
-        gallery = bootcamp.gallery_paths(proj)
-        return count, rows, gallery, f"Imported {count} images"
+        html = bootcamp.render_tag_grid(proj)
+        return count, rows, html, f"Imported {count} images"
 
     def _save_tags_ui(proj_name, rows):
         proj = bootcamp.BootcampProject.load(proj_name)
@@ -1088,8 +1089,8 @@ with gr.Blocks(theme=theme, css=css) as demo:
             proj.tags[img] = [t.strip() for t in str(tag_str).split(",") if t.strip()]
         proj.save()
         data = [[k, v] for k, v in bootcamp.tag_summary(proj).items()]
-        gallery = bootcamp.gallery_paths(proj)
-        return data, gallery
+        html = bootcamp.render_tag_grid(proj)
+        return data, html
 
     def _run_autotag_ui(proj_name, prepend, append, blacklist, max_tags, thresh):
         proj = bootcamp.BootcampProject.load(proj_name)
@@ -1102,8 +1103,8 @@ with gr.Blocks(theme=theme, css=css) as demo:
             proj.tags[img] = pre + auto + app
         proj.save()
         rows = [[img, ", ".join(proj.tags[img])] for img in proj.images]
-        gallery = bootcamp.gallery_paths(proj)
-        return rows, gallery, "Auto tags generated"
+        html = bootcamp.render_tag_grid(proj)
+        return rows, html, "Auto tags generated"
 
     def _export_dataset_ui(proj_name):
         proj = bootcamp.BootcampProject.load(proj_name)
@@ -1116,9 +1117,9 @@ with gr.Blocks(theme=theme, css=css) as demo:
     def _reset_project_ui(proj_name):
         proj = bootcamp.BootcampProject.load(proj_name)
         if proj is None:
-            return [], []
+            return [], ""
         bootcamp.reset_project(proj)
-        return [], []
+        return [], ""
 
     def _show_autotag_ui():
         return gr.update(visible=True)
@@ -1149,12 +1150,12 @@ with gr.Blocks(theme=theme, css=css) as demo:
     bc_upload.click(
         _upload_files_ui,
         inputs=[bc_project, bc_upload_input],
-        outputs=[bc_file_count, bc_tags_df, bc_gallery, bc_upload_msg],
+        outputs=[bc_file_count, bc_tags_df, bc_tags_grid, bc_upload_msg],
     )
     bc_save_tags.click(
         _save_tags_ui,
         inputs=[bc_project, bc_tags_df],
-        outputs=[bc_tag_view, bc_gallery],
+        outputs=[bc_tag_view, bc_tags_grid],
     )
     bc_download_ds.click(
         _export_dataset_ui,
@@ -1164,14 +1165,14 @@ with gr.Blocks(theme=theme, css=css) as demo:
     bc_reset_proj.click(
         _reset_project_ui,
         inputs=bc_project,
-        outputs=[bc_tags_df, bc_gallery],
+        outputs=[bc_tags_df, bc_tags_grid],
     )
     bc_autotag_open.click(_show_autotag_ui, outputs=bc_autotag_popup)
     bc_autotag_close.click(_hide_autotag_ui, outputs=bc_autotag_popup)
     bc_run_autotag.click(
         _run_autotag_ui,
         inputs=[bc_project, bc_prepend, bc_append, bc_blacklist, bc_max_tags, bc_thresh],
-        outputs=[bc_tags_df, bc_gallery, bc_autotag_msg],
+        outputs=[bc_tags_df, bc_tags_grid, bc_autotag_msg],
     )
     bc_model_select.change(
         _review_ui,
