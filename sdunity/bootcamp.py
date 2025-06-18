@@ -10,8 +10,7 @@ from html import escape
 
 import gradio as gr
 
-from . import config, lora_backend
-from .tagger import WD14Tagger
+from . import config
 
 
 @dataclass
@@ -43,11 +42,14 @@ class BootcampProject:
         return BootcampProject(**data)
 
 
-_TAGGER: WD14Tagger | None = None
+_TAGGER = None
 
-def _get_tagger() -> WD14Tagger:
+def _get_tagger():
+    """Return a singleton instance of ``WD14Tagger``."""
     global _TAGGER
     if _TAGGER is None:
+        from .tagger import WD14Tagger
+
         _TAGGER = WD14Tagger()
     return _TAGGER
 
@@ -235,6 +237,9 @@ def train_lora(
 
     if progress is not None:
         progress(0, desc="Initialising trainer")
+
+    # Import here to avoid heavy dependencies unless training is run
+    from . import lora_backend
 
     yield from lora_backend.train_lora(
         instance_dir,
