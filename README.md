@@ -46,7 +46,8 @@ The UI is split into tabs for generation, model management, a gallery, a Bootcam
 - View metadata such as prompt, model, LoRA and seed
 - Delete unwanted images
 
-### Bootcamp (Strongly WIP - Not Functional atm.)
+### Bootcamp
+Built-in LoRA trainer powered by a lightweight backend.
 - Step‑by‑step LoRA trainer with project folders
 - Upload zipped datasets and manage tags with image previews
 - Tags appear as dynamic buttons for bulk operations

@@ -3,7 +3,6 @@
 import os
 import json
 import shutil
-import subprocess
 import zipfile
 from dataclasses import dataclass, asdict, field
 from typing import Generator
@@ -11,7 +10,7 @@ from html import escape
 
 import gradio as gr
 
-from . import config
+from . import config, lora_backend
 
 
 @dataclass
@@ -180,9 +179,6 @@ def run_training(
     )
 
 
-BOOTCAMP_SCRIPT = "train_dreambooth_lora.py"
-
-
 def train_lora(
     instance_dir: str,
     pretrained_model: str,
@@ -191,42 +187,18 @@ def train_lora(
     learning_rate: float = 1e-4,
     progress: gr.Progress | None = None,
 ) -> Generator[str, None, None]:
-    """Launch LoRA training via the diffusers DreamBooth script.
+    """Train a LoRA model using the custom backend."""
 
-    This is a minimal wrapper around the official training script and is
-    provided as a work in progress. It requires ``accelerate`` and
-    ``diffusers[training]`` to be installed and accessible on the system.
-    """
     if progress:
-        progress(0, desc="Bootcamp initialising")
+        progress(0, desc="Initialising trainer")
 
-    if not shutil.which("accelerate"):
-        yield "`accelerate` command not found. Please install diffusers training requirements."
-        return
-
-    cmd = [
-        "accelerate",
-        "launch",
-        BOOTCAMP_SCRIPT,
-        "--pretrained_model_name_or_path",
-        pretrained_model,
-        "--instance_data_dir",
+    yield from lora_backend.train_lora(
         instance_dir,
-        "--output_dir",
+        pretrained_model,
         output_dir,
-        "--max_train_steps",
-        str(int(steps)),
-        "--learning_rate",
-        str(learning_rate),
-    ]
-    yield f"Starting Bootcamp with {steps} steps..."
-    try:
-        subprocess.run(cmd, check=True)
-    except subprocess.CalledProcessError as exc:
-        yield f"Training failed: {exc}"
-        return
-
-    yield f"Training complete. LoRA saved to {output_dir}"
+        steps=steps,
+        learning_rate=learning_rate,
+    )
 
 
 def export_dataset(proj: BootcampProject, dest_zip: str) -> str:
