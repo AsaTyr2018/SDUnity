@@ -11,6 +11,7 @@ from html import escape
 import gradio as gr
 
 from . import config, lora_backend
+from .tagger import WD14Tagger
 
 
 @dataclass
@@ -40,6 +41,15 @@ class BootcampProject:
         with open(meta, "r", encoding="utf-8") as f:
             data = json.load(f)
         return BootcampProject(**data)
+
+
+_TAGGER: WD14Tagger | None = None
+
+def _get_tagger() -> WD14Tagger:
+    global _TAGGER
+    if _TAGGER is None:
+        _TAGGER = WD14Tagger()
+    return _TAGGER
 
 
 def create_project(name: str, lora_type: str) -> BootcampProject:
@@ -117,6 +127,40 @@ def tag_summary(proj: BootcampProject) -> dict[str, int]:
         for t in tags:
             counts[t] = counts.get(t, 0) + 1
     return counts
+
+
+def auto_tag_dataset(
+    proj: BootcampProject,
+    max_tags: int = 5,
+    threshold: float = 0.35,
+    prepend: list[str] | None = None,
+    append: list[str] | None = None,
+    blacklist: set[str] | None = None,
+    progress: gr.Progress | None = None,
+) -> None:
+    """Tag all images in ``proj`` using the WD14 backend."""
+
+    prepend = [t for t in (prepend or []) if t]
+    append = [t for t in (append or []) if t]
+    blacklist = {t for t in (blacklist or set()) if t}
+
+    tagger = _get_tagger()
+    img_dir = os.path.join(proj.path, "images")
+    total = len(proj.images)
+    for idx, img in enumerate(proj.images, 1):
+        path = os.path.join(img_dir, img)
+        try:
+            tags = tagger.tag_file(path, threshold=threshold)
+        except Exception:
+            tags = []
+        tags = [t for t in tags if t not in blacklist]
+        if max_tags:
+            tags = tags[: int(max_tags)]
+        proj.tags[img] = prepend + tags + append
+        if progress:
+            progress((idx, total), desc=f"Tagging {img}")
+
+    proj.save()
 
 
 def render_tag_grid(proj: BootcampProject) -> str:
