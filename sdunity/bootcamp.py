@@ -120,12 +120,6 @@ def tag_summary(proj: BootcampProject) -> dict[str, int]:
     return counts
 
 
-def gallery_paths(proj: BootcampProject) -> list[str]:
-    """Return absolute image paths for gallery display."""
-    img_dir = os.path.join(proj.path, "images")
-    return [os.path.join(img_dir, img).replace("\\", "/") for img in proj.images]
-
-
 def render_tag_grid(proj: BootcampProject) -> str:
     """Return an HTML grid with image previews and tag buttons."""
     img_dir = os.path.join(proj.path, "images")
