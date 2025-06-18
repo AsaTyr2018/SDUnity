@@ -856,8 +856,19 @@ with gr.Blocks(theme=theme, css=css) as demo:
 
         with gr.TabItem("Bootcamp"):
             bc_project = gr.State()
-            with gr.Tabs():
-                with gr.TabItem("1. Setup"):
+            gr.HTML(
+                """
+                <script>
+                function goTab(id){
+                  const el = document.getElementById(id);
+                  if(el){ el.click(); }
+                }
+                </script>
+                """,
+                visible=False,
+            )
+            with gr.Tabs() as bc_tabs:
+                with gr.TabItem("1. Setup", elem_id="bc_setup_tab"):
                     bc_type = gr.Radio(
                         ["Character", "Style", "Concept"],
                         label="LoRA Type",
@@ -865,17 +876,20 @@ with gr.Blocks(theme=theme, css=css) as demo:
                     )
                     bc_name = gr.Textbox(label="Project Name", value="")
                     bc_create = gr.Button("Create Project")
+                    bc_next1 = gr.Button("Next", variant="primary")
                     bc_setup_out = gr.Markdown()
-                with gr.TabItem("2. Upload"):
+                with gr.TabItem("2. Upload", elem_id="bc_upload_tab"):
                     bc_upload_input = gr.File(
                         label="Upload Zip or Folder",
                         file_count="directory",
                         file_types=["image", ".zip"],
                     )
                     bc_upload = gr.Button("Upload")
+                    bc_prev2 = gr.Button("Back")
+                    bc_next2 = gr.Button("Next", variant="primary")
                     bc_file_count = gr.Number(label="Image Count", value=0, interactive=False)
                     bc_upload_msg = gr.Markdown()
-                with gr.TabItem("3. Tagging"):
+                with gr.TabItem("3. Tagging", elem_id="bc_tag_tab"):
                     bc_autotag_open = gr.Button("Auto-Tagging", variant="secondary")
                     bc_download_ds = gr.Button("Download Dataset")
                     bc_reset_proj = gr.Button("Reset Project")
@@ -892,9 +906,11 @@ with gr.Blocks(theme=theme, css=css) as demo:
                     bc_tags_grid = gr.HTML()
                     bc_tags_df = gr.Dataframe(headers=["Image", "Tags"], datatype=["str", "str"], row_count=0, visible=False)
                     bc_save_tags = gr.Button("Save Tags")
+                    bc_prev3 = gr.Button("Back")
+                    bc_next3 = gr.Button("Next", variant="primary")
                     bc_selected_tags = gr.Textbox(label="Selected Tags", interactive=False, elem_id="bc_selected_tags")
                     bc_tag_view = gr.Dataframe(headers=["Tag", "Count"], datatype=["str", "int"], interactive=False)
-                with gr.TabItem("5. Training Parameters"):
+                with gr.TabItem("4. Training Parameters", elem_id="bc_params_tab"):
                     bc_model_select = gr.Radio(["SD 1.5", "SDXL", "Pony"], label="Model", value="SD 1.5")
                     bc_steps = gr.Number(label="Steps", value=1000, precision=0)
                     bc_lr = gr.Number(label="Learning Rate", value=1e-4)
@@ -925,9 +941,12 @@ with gr.Blocks(theme=theme, css=css) as demo:
                     bc_prompt1 = gr.Textbox(label="Image #1", value="Automatically set")
                     bc_prompt2 = gr.Textbox(label="Image #2")
                     bc_prompt3 = gr.Textbox(label="Image #3")
-                with gr.TabItem("6. Review and Start Training"):
+                    bc_prev4 = gr.Button("Back")
+                    bc_next4 = gr.Button("Next", variant="primary")
+                with gr.TabItem("5. Review and Start Training", elem_id="bc_review_tab"):
                     bc_review = gr.Markdown()
                     bc_train = gr.Button("Start Training", variant="primary")
+                    bc_prev5 = gr.Button("Back")
                 bc_log = gr.Markdown()
 
         with gr.TabItem("Settings"):
@@ -1152,17 +1171,25 @@ with gr.Blocks(theme=theme, css=css) as demo:
         _create_project_ui,
         inputs=[bc_type, bc_name],
         outputs=[bc_project, bc_setup_out],
+        js="goTab('bc_upload_tab')",
     )
+    bc_next1.click(None, js="goTab('bc_upload_tab')")
     bc_upload.click(
         _upload_files_ui,
         inputs=[bc_project, bc_upload_input],
         outputs=[bc_file_count, bc_tags_df, bc_tags_grid, bc_upload_msg],
+        js="goTab('bc_tag_tab')",
     )
+    bc_prev2.click(None, js="goTab('bc_setup_tab')")
+    bc_next2.click(None, js="goTab('bc_tag_tab')")
     bc_save_tags.click(
         _save_tags_ui,
         inputs=[bc_project, bc_tags_df],
         outputs=[bc_tag_view, bc_tags_grid],
+        js="goTab('bc_params_tab')",
     )
+    bc_prev3.click(None, js="goTab('bc_upload_tab')")
+    bc_next3.click(None, js="goTab('bc_params_tab')")
     bc_download_ds.click(
         _export_dataset_ui,
         inputs=bc_project,
@@ -1185,11 +1212,14 @@ with gr.Blocks(theme=theme, css=css) as demo:
         inputs=[bc_project, bc_model_select],
         outputs=[bc_review, bc_steps, bc_lr, bc_num_repeats],
     )
+    bc_prev4.click(None, js="goTab('bc_tag_tab')")
+    bc_next4.click(None, js="goTab('bc_review_tab')")
     bc_train.click(
         _train_ui,
         inputs=[bc_project, bc_model_select, bc_steps, bc_lr],
         outputs=bc_log,
     )
+    bc_prev5.click(None, js="goTab('bc_params_tab')")
 
     prompt.input(_prompt_autocomplete, inputs=prompt, outputs=tag_suggestions)
     tag_suggestions.change(
