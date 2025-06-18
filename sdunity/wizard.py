@@ -4,63 +4,62 @@ import gradio as gr
 
 from . import bootcamp, config
 
-def create_training_wizard() -> gr.Blocks:
-    """Return a simple three-step LoRA training wizard."""
-    with gr.Blocks() as demo:
-        project_state = gr.State()
-        step_state = gr.State(1)
-        progress = gr.Markdown("### Step 1 of 3", elem_id="wizard_progress")
-        gr.HTML(
-            """
-            <script>
-            function wizTab(id){
-              const el = document.getElementById(id);
-              if(el){ el.click(); }
-            }
-            </script>
-            """,
-            visible=False,
-        )
-        with gr.Tabs() as tabs:
-            with gr.TabItem("1. Basic Info", elem_id="wiz_setup_tab"):
-                wiz_type = gr.Radio(
-                    ["Character", "Style", "Concept", "Effect"],
-                    label="LoRA Type",
-                    value="Character",
-                )
-                wiz_name = gr.Textbox(label="Project Name")
-                create_btn = gr.Button("Create Project")
-                next_btn1 = gr.Button("Next", variant="primary")
-                setup_out = gr.Markdown()
-            with gr.TabItem("2. Dataset", elem_id="wiz_data_tab"):
-                upload_in = gr.File(
-                    label="Upload Images or Zip",
-                    file_count="directory",
-                    file_types=["image", ".zip"],
-                )
-                upload_btn = gr.Button("Upload")
+def create_training_wizard() -> None:
+    """Render a simple three-step LoRA training wizard inside the current block."""
+    project_state = gr.State()
+    step_state = gr.State(1)
+    progress = gr.Markdown("### Step 1 of 3", elem_id="wizard_progress")
+    gr.HTML(
+        """
+        <script>
+        function wizTab(id){
+          const el = document.getElementById(id);
+          if(el){ el.click(); }
+        }
+        </script>
+        """,
+        visible=False,
+    )
+    with gr.Tabs() as tabs:
+        with gr.TabItem("1. Basic Info", elem_id="wiz_setup_tab"):
+            wiz_type = gr.Radio(
+                ["Character", "Style", "Concept", "Effect"],
+                label="LoRA Type",
+                value="Character",
+            )
+            wiz_name = gr.Textbox(label="Project Name")
+            create_btn = gr.Button("Create Project")
+            next_btn1 = gr.Button("Next", variant="primary")
+            setup_out = gr.Markdown()
+        with gr.TabItem("2. Dataset", elem_id="wiz_data_tab"):
+            upload_in = gr.File(
+                label="Upload Images or Zip",
+                file_count="directory",
+                file_types=["image", ".zip"],
+            )
+            upload_btn = gr.Button("Upload")
 
-                grid = gr.HTML()
-                tags_df = gr.Dataframe(
-                    headers=["Image", "Tags"],
-                    datatype=["str", "str"],
-                    row_count=0,
-                )
-                with gr.Accordion("Auto Tagging", open=False):
-                    at_pre = gr.Textbox(label="Prepend Tags")
-                    at_app = gr.Textbox(label="Append Tags")
-                    at_black = gr.Textbox(label="Blacklist")
-                    at_max = gr.Number(label="Max Tags", value=5, precision=0)
-                    at_thresh = gr.Number(label="Min Threshold", value=0.35)
-                    run_autotag_btn = gr.Button("Run Auto-Tagging")
-                    at_msg = gr.Markdown()
-                save_tags_btn = gr.Button("Save Tags")
-                export_btn = gr.Button("Download Dataset")
-                dataset_file = gr.File(label="Dataset Zip", visible=False)
-                reset_btn = gr.Button("Reset")
-                msg = gr.Markdown()
-                back_btn2 = gr.Button("Back")
-                next_btn2 = gr.Button("Next", variant="primary")
+            grid = gr.HTML()
+            tags_df = gr.Dataframe(
+                headers=["Image", "Tags"],
+                datatype=["str", "str"],
+                row_count=0,
+            )
+            with gr.Accordion("Auto Tagging", open=False):
+                at_pre = gr.Textbox(label="Prepend Tags")
+                at_app = gr.Textbox(label="Append Tags")
+                at_black = gr.Textbox(label="Blacklist")
+                at_max = gr.Number(label="Max Tags", value=5, precision=0)
+                at_thresh = gr.Number(label="Min Threshold", value=0.35)
+                run_autotag_btn = gr.Button("Run Auto-Tagging")
+                at_msg = gr.Markdown()
+            save_tags_btn = gr.Button("Save Tags")
+            export_btn = gr.Button("Download Dataset")
+            dataset_file = gr.File(label="Dataset Zip", visible=False)
+            reset_btn = gr.Button("Reset")
+            msg = gr.Markdown()
+            back_btn2 = gr.Button("Back")
+            next_btn2 = gr.Button("Next", variant="primary")
             with gr.TabItem("3. Train", elem_id="wiz_train_tab"):
                 model_sel = gr.Radio(["SD 1.5", "SDXL", "Pony"], label="Model", value="SD 1.5")
                 steps_in = gr.Number(label="Steps", value=1000, precision=0)
@@ -213,4 +212,3 @@ def create_training_wizard() -> gr.Blocks:
         train_btn.click(_train, inputs=[project_state, model_sel, steps_in, lr_in], outputs=log_md)
         back_btn3.click(lambda: ("### Step 2 of 3", 2), outputs=[progress, step_state], js="wizTab('wiz_data_tab')")
 
-    return demo
