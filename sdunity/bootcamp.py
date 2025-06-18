@@ -111,7 +111,8 @@ def suggest_params(proj: BootcampProject, model_type: str) -> dict[str, int | fl
     """Return simple training parameter suggestions."""
     steps = max(1000, len(proj.images) * 50)
     lr = 1e-4 if model_type != "SDXL" else 5e-5
-    return {"steps": steps, "learning_rate": lr}
+    repeats = max(1, int(steps / max(len(proj.images), 1)))
+    return {"steps": steps, "learning_rate": lr, "num_repeats": repeats}
 
 
 def run_training(

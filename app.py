@@ -879,6 +879,30 @@ with gr.Blocks(theme=theme, css=css) as demo:
                     bc_model_select = gr.Radio(["SD 1.5", "SDXL", "Pony"], label="Model", value="SD 1.5")
                     bc_steps = gr.Number(label="Steps", value=1000, precision=0)
                     bc_lr = gr.Number(label="Learning Rate", value=1e-4)
+                    with gr.Accordion("More Options", open=False):
+                        bc_epochs = gr.Number(label="Epochs", value=10, precision=0)
+                        bc_num_repeats = gr.Number(label="Num Repeats", value=1, precision=0)
+                        bc_batch = gr.Number(label="Train Batch Size", value=4, precision=0)
+                        bc_resolution = gr.Number(label="Resolution", value=1024, precision=0)
+                        bc_lora_type_field = gr.Textbox(label="LoRA Type", value="Lora")
+                        bc_enable_bucket = gr.Checkbox(label="Enable Bucket", value=True)
+                        bc_shuffle_tags = gr.Checkbox(label="Shuffle Tags", value=False)
+                        bc_keep_tokens = gr.Number(label="Keep Tokens", value=0, precision=0)
+                        bc_clip_skip_train = gr.Number(label="Clip Skip", value=1, precision=0)
+                        bc_flip_aug = gr.Checkbox(label="Flip Augmentation", value=True)
+                        bc_unet_lr = gr.Number(label="Unet LR", value=0.00050)
+                        bc_text_lr = gr.Number(label="Text Encoder LR", value=0.00005)
+                        bc_scheduler = gr.Textbox(label="LR Scheduler", value="cosine_with_restarts")
+                        bc_scheduler_cycles = gr.Number(label="LR Scheduler Cycles", value=3, precision=0)
+                        bc_min_snr = gr.Number(label="Min SNR Gamma", value=5)
+                        bc_net_dim = gr.Number(label="Network Dim", value=32, precision=0)
+                        bc_net_alpha = gr.Number(label="Network Alpha", value=16, precision=0)
+                        bc_noise_offset = gr.Number(label="Noise Offset", value=0.10)
+                        bc_optimizer = gr.Textbox(label="Optimizer", value="Adafactor")
+                        bc_optimizer_args = gr.Textbox(
+                            label="Optimizer Args",
+                            value="scale_parameter=False, relative_step=False, warmup_init=False",
+                        )
                     bc_prompt1 = gr.Textbox(label="Image #1", value="Automatically set")
                     bc_prompt2 = gr.Textbox(label="Image #2")
                     bc_prompt3 = gr.Textbox(label="Image #3")
@@ -1079,10 +1103,10 @@ with gr.Blocks(theme=theme, css=css) as demo:
     def _review_ui(proj_name, model_type):
         proj = bootcamp.BootcampProject.load(proj_name)
         if proj is None:
-            return "No project", 0, 0.0
+            return "No project", 0, 0.0, 1
         params = bootcamp.suggest_params(proj, model_type)
         info = f"### {proj.name}\nType: {proj.lora_type}\nImages: {len(proj.images)}"
-        return info, params["steps"], params["learning_rate"]
+        return info, params["steps"], params["learning_rate"], params["num_repeats"]
 
     def _train_ui(proj_name, model_type, steps, lr):
         proj = bootcamp.BootcampProject.load(proj_name)
@@ -1126,7 +1150,7 @@ with gr.Blocks(theme=theme, css=css) as demo:
     bc_model_select.change(
         _review_ui,
         inputs=[bc_project, bc_model_select],
-        outputs=[bc_review, bc_steps, bc_lr],
+        outputs=[bc_review, bc_steps, bc_lr, bc_num_repeats],
     )
     bc_train.click(
         _train_ui,
