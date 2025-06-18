@@ -144,3 +144,23 @@ def train_lora(
         return
 
     yield f"Training complete. LoRA saved to {output_dir}"
+
+
+def export_dataset(proj: BootcampProject, dest_zip: str) -> str:
+    """Package the project images and tags into ``dest_zip``."""
+    img_dir = os.path.join(proj.path, "images")
+    with zipfile.ZipFile(dest_zip, "w") as zf:
+        for img in proj.images:
+            img_path = os.path.join(img_dir, img)
+            if os.path.isfile(img_path):
+                zf.write(img_path, os.path.join("images", img))
+        zf.writestr("tags.json", json.dumps(proj.tags, indent=2))
+    return dest_zip
+
+
+def reset_project(proj: BootcampProject) -> None:
+    """Remove all dataset files from the project and reset metadata."""
+    shutil.rmtree(os.path.join(proj.path, "images"), ignore_errors=True)
+    proj.images = []
+    proj.tags = {}
+    proj.save()
