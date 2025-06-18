@@ -12,6 +12,7 @@ from sdunity import (
     config,
     civitai,
     bootcamp,
+    wizard,
     tags,
     settings_presets,
 )
@@ -164,6 +165,11 @@ body {
 }
 .bc_tags button.selected {
     background: #6b7280;
+}
+# Wizard progress
+#wizard_progress {
+    text-align: center;
+    font-weight: bold;
 }
 """
 with gr.Blocks(theme=theme, css=css) as demo:
@@ -951,6 +957,9 @@ with gr.Blocks(theme=theme, css=css) as demo:
                     bc_train = gr.Button("Start Training", variant="primary")
                     bc_prev5 = gr.Button("Back")
                 bc_log = gr.Markdown()
+
+        with gr.TabItem("Training Wizard"):
+            wizard.create_training_wizard()
 
         with gr.TabItem("Settings"):
             settings_inputs = []
