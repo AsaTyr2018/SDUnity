@@ -8,6 +8,7 @@
   - [Gallery](#gallery)
   - [Bootcamp](#bootcamp)
   - [Civitai Integration](#civitai-integration)
+  - [Image Tagger](#image-tagger)
   - [Tag Suggestions](#tag-suggestions)
 - [Setup](#setup)
 - [Maintainer Script](#maintainer-script)
@@ -63,6 +64,9 @@ The UI is split into tabs for generation, model management, a gallery, a Bootcam
   [a1111-sd-webui-tagcomplete](https://github.com/DominikDoom/a1111-sd-webui-tagcomplete)
   and rebuilds the dataset via `scripts/import_tagcomplete.py`.
 - Press **Tab** while typing to insert the top suggestion without leaving the prompt box.
+### Image Tagger
+- Automatically tag anime-style images using the WD14 tagger model
+
 
 ## Setup
 Clone the repository and run the maintainer script to install SDUnity under `/opt/SDUnity` with its own virtual environment:
