@@ -6,6 +6,14 @@ from PIL import Image
 import torch
 from transformers import AutoImageProcessor, AutoModelForImageClassification
 
+try:
+    from timm.models.swin_transformer_v2 import SwinTransformerV2
+    if not hasattr(SwinTransformerV2, "_initialize_weights") and hasattr(SwinTransformerV2, "_init_weights"):
+        SwinTransformerV2._initialize_weights = SwinTransformerV2._init_weights
+except Exception:
+    # ``timm`` might not be installed during documentation builds
+    pass
+
 
 class WD14Tagger:
     """Tag images using the WD14 anime tagging model."""
