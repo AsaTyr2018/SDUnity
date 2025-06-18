@@ -814,6 +814,134 @@ with gr.Blocks(theme=theme, css=css) as demo:
                 return new_text, gr.update(choices=[], value=None, visible=False)
 
 
+        with gr.TabItem("Settings"):
+            settings_inputs = []
+            civitai_key = gr.Textbox(
+                label="Civitai API Key",
+                value=config.USER_CONFIG.get("civitai_api_key", ""),
+                info="Optional API key for Civitai",
+            )
+            settings_inputs.append(civitai_key)
+
+            with gr.Accordion("Server Options", open=False):
+                for k, default in config.GRADIO_LAUNCH_CONFIG.items():
+                    if k == "allowed_paths":
+                        continue
+                    val = config.USER_CONFIG.get(k, default)
+                    help_txt = {
+                        "server_name": "Network interface to bind",
+                        "server_port": "Port for the web UI",
+                        "share": "Create a public link",
+                        "inbrowser": "Open browser after launch",
+                        "show_error": "Display errors in UI",
+                        "debug": "Enable debug logs",
+                        "max_threads": "Maximum thread workers",
+                        "auth": "Username:password for login",
+                        "auth_message": "Message on auth prompt",
+                        "ssl_keyfile": "Path to SSL key",
+                        "ssl_certfile": "Path to SSL certificate",
+                        "quiet": "Reduce terminal output",
+                        "show_api": "Expose REST API docs",
+                    }.get(k, "")
+                    if isinstance(default, bool):
+                        comp = gr.Checkbox(label=k, value=bool(val), info=help_txt)
+                    elif isinstance(default, int) or isinstance(default, float):
+                        comp = gr.Number(label=k, value=val, precision=0, info=help_txt)
+                    else:
+                        comp = gr.Textbox(label=k, value="" if val is None else val, info=help_txt)
+                    settings_inputs.append(comp)
+
+            save_status = gr.Markdown("")
+            with gr.Row():
+                save_btn = gr.Button("Save")
+                save_reload_btn = gr.Button("Save + Reload")
+
+            def _save_settings(*vals):
+                cfg = {"civitai_api_key": vals[0]}
+                idx = 1
+                for key, default in config.GRADIO_LAUNCH_CONFIG.items():
+                    if key == "allowed_paths":
+                        continue
+                    val = vals[idx]
+                    idx += 1
+                    if isinstance(default, bool):
+                        cfg[key] = bool(val)
+                    elif isinstance(default, int) or isinstance(default, float):
+                        cfg[key] = None if val == "" else int(val)
+                    else:
+                        cfg[key] = val if val != "" else None
+                config.USER_CONFIG.update(cfg)
+                config.save_user_config()
+                civitai.set_api_key(cfg.get("civitai_api_key", ""))
+                for key in config.GRADIO_LAUNCH_CONFIG:
+                    if key in cfg:
+                        config.GRADIO_LAUNCH_CONFIG[key] = cfg[key]
+                return "Settings saved"
+
+            def _save_reload(*vals):
+                _save_settings(*vals)
+                os.execl(sys.executable, sys.executable, *sys.argv)
+
+            save_btn.click(_save_settings, inputs=settings_inputs, outputs=save_status)
+            save_reload_btn.click(
+                _save_reload, inputs=settings_inputs, outputs=save_status
+            )
+
+    def _generate_with_preview(*args):
+        last = None
+        for result in generator.generate_image(*args):
+            last = result
+            img, seed_val, gallery_items, new_paths = result
+            yield gr.update(value=img, visible=True), seed_val, gallery_items, new_paths
+        if last is not None:
+            img, seed_val, gallery_items, new_paths = last
+            yield gr.update(visible=False), seed_val, gallery_items, new_paths
+
+    generate_btn.click(
+        _generate_with_preview,
+        inputs=[
+            prompt,
+            negative_prompt,
+            seed,
+            random_seed_chk,
+            steps,
+            width,
+            height,
+            guidance_scale,
+            clip_skip,
+            model_category,
+            model,
+            lora,
+            nsfw_filter,
+            images_per_batch,
+            batch_count,
+            preset,
+            auto_enhance_chk,
+            smooth_preview_chk,
+            scheduler,
+            precision_dd,
+            tile_chk,
+            lora_weight,
+            denoising_strength,
+            highres_fix_chk,
+        ],
+        outputs=[output, seed, finished_gallery, finished_gallery_state],
+    )
+    refresh.click(
+        models.refresh_lists,
+        inputs=model_category,
+        outputs=[model_category, model, lora],
+    )
+    model_category.change(
+        lambda c: gr.update(
+            choices=models.list_models(c),
+            value=models.list_models(c)[0] if models.list_models(c) else None,
+        ),
+        inputs=model_category,
+        outputs=model,
+    )
+
+
     prompt.input(_prompt_autocomplete, inputs=prompt, outputs=tag_suggestions)
     tag_suggestions.change(
         _apply_tag,
