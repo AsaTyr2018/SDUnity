@@ -131,12 +131,27 @@ body {
     grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
     gap: 8px;
 }
+.bc_item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 4px;
+    border: 1px solid #333;
+    border-radius: 4px;
+}
 .bc_item img {
     width: 128px !important;
     height: 128px !important;
     object-fit: cover;
     display: block;
     margin-bottom: 4px;
+}
+.bc_tags {
+    text-align: center;
+}
+.bc_tag_none {
+    color: #888;
+    font-size: 0.8em;
 }
 .bc_tags button {
     margin: 0 2px 2px 0;
