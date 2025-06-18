@@ -157,7 +157,7 @@ def auto_tag_dataset(
         if max_tags:
             tags = tags[: int(max_tags)]
         proj.tags[img] = prepend + tags + append
-        if progress:
+        if progress is not None:
             progress((idx, total), desc=f"Tagging {img}")
 
     proj.save()
@@ -233,7 +233,7 @@ def train_lora(
 ) -> Generator[str, None, None]:
     """Train a LoRA model using the custom backend."""
 
-    if progress:
+    if progress is not None:
         progress(0, desc="Initialising trainer")
 
     yield from lora_backend.train_lora(
