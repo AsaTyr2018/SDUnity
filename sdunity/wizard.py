@@ -1,8 +1,8 @@
+
 import os
 import gradio as gr
 
 from . import bootcamp, config
-
 
 def create_training_wizard() -> gr.Blocks:
     """Return a simple three-step LoRA training wizard."""
@@ -39,6 +39,7 @@ def create_training_wizard() -> gr.Blocks:
                     file_types=["image", ".zip"],
                 )
                 upload_btn = gr.Button("Upload")
+
                 grid = gr.HTML()
                 tags_df = gr.Dataframe(
                     headers=["Image", "Tags"],
@@ -83,7 +84,9 @@ def create_training_wizard() -> gr.Blocks:
         def _upload(proj_name, files):
             proj = bootcamp.BootcampProject.load(proj_name)
             if proj is None:
+
                 return [], "", "Project not found", "### Step 2 of 3", 2
+
             uploads = []
             if files:
                 if isinstance(files, list):
@@ -91,6 +94,7 @@ def create_training_wizard() -> gr.Blocks:
                 else:
                     uploads = [files]
             count = bootcamp.import_uploads(proj, uploads)
+
             rows = [[img, ", ".join(proj.tags.get(img, []))] for img in proj.images]
             html = bootcamp.render_tag_grid(proj)
             return rows, html, f"Imported {count} images", "### Step 2 of 3", 2
@@ -178,6 +182,7 @@ def create_training_wizard() -> gr.Blocks:
         upload_btn.click(
             _upload,
             inputs=[project_state, upload_in],
+
             outputs=[tags_df, grid, msg, progress, step_state],
         )
         run_autotag_btn.click(
@@ -196,6 +201,7 @@ def create_training_wizard() -> gr.Blocks:
             inputs=project_state,
             outputs=[tags_df, grid, msg, dataset_file],
         )
+
         back_btn2.click(lambda: ("### Step 1 of 3", 1), outputs=[progress, step_state], js="wizTab('wiz_setup_tab')")
         next_btn2.click(
             _next_from_data,
