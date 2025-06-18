@@ -50,22 +50,66 @@ def create_project(name: str, lora_type: str) -> BootcampProject:
     return proj
 
 
-def import_zip(proj: BootcampProject, zip_path: str) -> int:
-    """Extract images from ``zip_path`` into the project directory."""
+def _copy_image(src: str, dest_dir: str) -> str:
+    """Copy ``src`` into ``dest_dir`` with a unique name."""
+    name = os.path.basename(src)
+    base, ext = os.path.splitext(name)
+    dest = os.path.join(dest_dir, name)
+    idx = 1
+    while os.path.exists(dest):
+        dest = os.path.join(dest_dir, f"{base}_{idx}{ext}")
+        idx += 1
+    shutil.copy(src, dest)
+    return os.path.basename(dest)
+
+
+def import_uploads(proj: BootcampProject, uploads: list[str]) -> int:
+    """Import images from uploaded files or directories."""
     img_dir = os.path.join(proj.path, "images")
     os.makedirs(img_dir, exist_ok=True)
-    with zipfile.ZipFile(zip_path, "r") as zf:
-        zf.extractall(img_dir)
+    new_imgs: list[str] = []
+
+    for path in uploads:
+        if not path:
+            continue
+        if zipfile.is_zipfile(path):
+            with zipfile.ZipFile(path, "r") as zf:
+                for info in zf.infolist():
+                    if info.is_dir():
+                        continue
+                    fname = info.filename
+                    if not fname.lower().endswith((".png", ".jpg", ".jpeg", ".webp")):
+                        continue
+                    with zf.open(info) as src, open(
+                        os.path.join(img_dir, os.path.basename(fname)), "wb"
+                    ) as out:
+                        shutil.copyfileobj(src, out)
+                    new_imgs.append(os.path.basename(fname))
+        elif os.path.isdir(path):
+            for root, _, files in os.walk(path):
+                for f in files:
+                    if f.lower().endswith((".png", ".jpg", ".jpeg", ".webp")):
+                        src_path = os.path.join(root, f)
+                        new_imgs.append(_copy_image(src_path, img_dir))
+        else:
+            if path.lower().endswith((".png", ".jpg", ".jpeg", ".webp")):
+                new_imgs.append(_copy_image(path, img_dir))
+
     imgs = [
         f
         for f in os.listdir(img_dir)
         if f.lower().endswith((".png", ".jpg", ".jpeg", ".webp"))
     ]
-    proj.images = imgs
-    for img in imgs:
+    proj.images = sorted(imgs)
+    for img in proj.images:
         proj.tags.setdefault(img, [])
     proj.save()
-    return len(imgs)
+    return len(new_imgs)
+
+
+def import_zip(proj: BootcampProject, zip_path: str) -> int:
+    """Backward compatibility wrapper for ``import_uploads``."""
+    return import_uploads(proj, [zip_path])
 
 
 def tag_summary(proj: BootcampProject) -> dict[str, int]:

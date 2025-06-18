@@ -852,7 +852,11 @@ with gr.Blocks(theme=theme, css=css) as demo:
                     bc_create = gr.Button("Create Project")
                     bc_setup_out = gr.Markdown()
                 with gr.TabItem("2. Upload"):
-                    bc_zip = gr.File(label="Upload .zip")
+                    bc_upload_input = gr.File(
+                        label="Upload Zip or Folder",
+                        file_count="directory",
+                        file_types=["image", ".zip"],
+                    )
                     bc_upload = gr.Button("Upload")
                     bc_file_count = gr.Number(label="Image Count", value=0, interactive=False)
                     bc_upload_msg = gr.Markdown()
@@ -1043,13 +1047,17 @@ with gr.Blocks(theme=theme, css=css) as demo:
         proj = bootcamp.create_project(name, lora_type)
         return proj.name, f"Created project `{name}`"
 
-    def _upload_zip_ui(proj_name, zip_file):
-        if not proj_name or zip_file is None:
+    def _upload_files_ui(proj_name, upload_files):
+        if not proj_name or not upload_files:
             return 0, [], "", "No project or file uploaded"
+        if isinstance(upload_files, str):
+            uploads = [upload_files]
+        else:
+            uploads = [f.name for f in upload_files] if hasattr(upload_files, "__iter__") else [upload_files.name]
         proj = bootcamp.BootcampProject.load(proj_name)
         if proj is None:
             return 0, [], "", "Project not found"
-        count = bootcamp.import_zip(proj, zip_file.name)
+        count = bootcamp.import_uploads(proj, uploads)
         rows = [[img, ""] for img in proj.images]
         html = bootcamp.render_tag_grid(proj)
         return count, rows, html, f"Imported {count} images"
@@ -1121,8 +1129,8 @@ with gr.Blocks(theme=theme, css=css) as demo:
         outputs=[bc_project, bc_setup_out],
     )
     bc_upload.click(
-        _upload_zip_ui,
-        inputs=[bc_project, bc_zip],
+        _upload_files_ui,
+        inputs=[bc_project, bc_upload_input],
         outputs=[bc_file_count, bc_tags_df, bc_tags_grid, bc_upload_msg],
     )
     bc_save_tags.click(
