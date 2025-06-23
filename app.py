@@ -27,8 +27,8 @@ MODEL_DIR_MAP = {"sd15": "SD15", "sdxl": "SDXL", "ponyxl": "PonyXL"}
 # UI
 # ---------------------------------------------------------------------------
 
-theme = gr.themes.Monochrome(
-    primary_hue="slate",
+theme = gr.themes.Default(
+    primary_hue="orange",
     radius_size=gr.themes.sizes.radius_md,
 ).set(
     body_background_fill="#0d0d0d",
