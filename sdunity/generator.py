@@ -154,6 +154,13 @@ def generate_image(
             lora = [lora]
         adapter_names = []
         adapter_weights = []
+        # Some LoRA files may override the UNet configuration which can
+        # break pipelines that don't expect additional embeddings.
+        orig_addition_embed_type = None
+        if hasattr(pipe, "unet") and hasattr(pipe.unet, "config"):
+            orig_addition_embed_type = getattr(
+                pipe.unet.config, "addition_embed_type", None
+            )
         for name in lora:
             path = models.LORA_LOOKUP.get(name)
             if path and hasattr(pipe, "load_lora_weights"):
@@ -169,6 +176,9 @@ def generate_image(
                 pipe.set_adapters(adapter_names, adapter_weights)
             except Exception:
                 pass
+        # Restore original UNet embed type to avoid missing key errors
+        if orig_addition_embed_type is not None and hasattr(pipe, "unet") and hasattr(pipe.unet, "config"):
+            pipe.unet.config.addition_embed_type = orig_addition_embed_type
 
     if not hasattr(pipe, "_original_safety_checker"):
         pipe._original_safety_checker = getattr(pipe, "safety_checker", None)
