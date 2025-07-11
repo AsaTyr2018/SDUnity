@@ -29,17 +29,17 @@ MODEL_DIR_MAP = {"sd15": "SD15", "sdxl": "SDXL", "ponyxl": "PonyXL"}
 # ---------------------------------------------------------------------------
 
 theme = gr.themes.Default(
-    primary_hue="orange",
-    radius_size=gr.themes.sizes.radius_md,
+    primary_hue="blue",
+    radius_size=gr.themes.sizes.radius_lg,
 ).set(
-    body_background_fill="#0d0d0d",
-    body_background_fill_dark="#0d0d0d",
+    body_background_fill="#121212",
+    body_background_fill_dark="#121212",
     body_text_color="#e0e0e0",
     body_text_color_dark="#e0e0e0",
-    block_background_fill="#1b1b1b",
-    block_background_fill_dark="#1b1b1b",
-    block_border_color="#262626",
-    block_border_color_dark="#262626",
+    block_background_fill="#1a1a1a",
+    block_background_fill_dark="#1a1a1a",
+    block_border_color="#303030",
+    block_border_color_dark="#303030",
     input_background_fill="#222222",
     input_background_fill_dark="#222222",
     shadow_drop="0 4px 8px rgba(0,0,0,0.6)",
@@ -51,7 +51,7 @@ theme = gr.themes.Default(
 css = """
 # Global dark background with subtle gradient
 body {
-    background: radial-gradient(circle at 50% 0%, #111111, #000000) !important;
+    background: radial-gradient(circle at 50% 0%, #181818, #0e0e0e) !important;
 }
 
 # Slight 3D effect for blocks
@@ -127,7 +127,9 @@ body {
 """
 
 with gr.Blocks(theme=theme, css=css) as demo:
-    gr.Markdown("# SDUnity")
+    gr.Markdown(
+        "# SDUnity\n" "Welcome! Use the tabs below to create images, manage models and tweak settings."
+    )
 
     with gr.Tabs():
         with gr.TabItem("Generation"):
@@ -206,7 +208,7 @@ with gr.Blocks(theme=theme, css=css) as demo:
                 load_status = gr.Markdown("")
                 loaded_model_state = gr.State("")
 
-            generate_btn = gr.Button("Generate", variant="primary")
+            generate_btn = gr.Button("Create Image", variant="primary")
 
             with gr.Row():
                 output = gr.Image(
@@ -225,6 +227,9 @@ with gr.Blocks(theme=theme, css=css) as demo:
                 finished_gallery_state = gr.State([])
 
         with gr.TabItem("Generation Settings"):
+            gr.Markdown(
+                "Adjust how inference runs. Basic options are shown below, while advanced controls can be expanded."
+            )
             with gr.Row():
                 settings_preset_dd = gr.Dropdown(
                     choices=list(settings_presets.PRESETS.keys()),
@@ -237,103 +242,116 @@ with gr.Blocks(theme=theme, css=css) as demo:
                 preset_name_box = gr.Textbox(label="Preset Name", visible=False)
                 preset_confirm_btn = gr.Button("Confirm", visible=False)
                 preset_status = gr.Markdown("", visible=False)
-            with gr.Row():
-                with gr.Column():
-                    seed = gr.Number(
-                        label="Seed",
-                        value=None,
-                        precision=0,
-                        info="Random seed for reproducible results",
-                    )
-                    random_seed_chk = gr.Checkbox(
-                        label="Random Seed",
-                        value=False,
-                        info="Use a new seed for each batch",
-                    )
-                    steps = gr.Slider(
-                        1, 50, value=20, label="Steps", info="Number of denoising steps"
-                    )
-                    guidance_scale = gr.Slider(
-                        1,
-                        20,
-                        value=7.5,
-                        step=0.5,
-                        label="Guidance Scale",
-                        info="How closely the image follows the prompt",
-                    )
-                    clip_skip = gr.Slider(
-                        1,
-                        4,
-                        value=1,
-                        step=1,
-                        label="Clip Skip",
-                        info="Skip final CLIP layers",
-                    )
-                    scheduler = gr.Dropdown(
-                        label="Sampler",
-                        choices=["Euler", "Euler a", "DDIM", "DPM++ 2M Karras"],
-                        value="Euler",
-                    )
-                    precision_dd = gr.Dropdown(
-                        label="Precision",
-                        choices=["fp16", "fp32"],
-                        value="fp16",
-                    )
-                    tile_chk = gr.Checkbox(label="Tile Output", value=False)
-                    lora_weight = gr.Slider(
-                        0.0,
-                        1.0,
-                        step=0.05,
-                        value=1.0,
-                        label="LoRA Weight",
-                    )
-                    denoising_strength = gr.Slider(
-                        0.0,
-                        1.0,
-                        step=0.05,
-                        value=0.75,
-                        label="Denoising Strength",
-                    )
-                    highres_fix_chk = gr.Checkbox(label="High Res Fix", value=False)
-                    nsfw_filter = gr.Checkbox(
-                        label="NSFW Filter", value=True, info="Enable safety checker"
-                    )
-                with gr.Column():
-                    width = gr.Slider(
-                        64,
-                        1024,
-                        value=256,
-                        step=64,
-                        label="Width",
-                        info="Output image width",
-                    )
-                    height = gr.Slider(
-                        64,
-                        1024,
-                        value=256,
-                        step=64,
-                        label="Height",
-                        info="Output image height",
-                    )
-                    smooth_preview_chk = gr.Checkbox(
-                        label="Smooth Preview",
-                        value=False,
-                        info="Show real-time preview while generating",
-                    )
-                    images_per_batch = gr.Number(
-                        label="Images per Batch",
-                        value=1,
-                        precision=0,
-                        minimum=1,
-                        info="How many images to generate at once",
-                    )
-                    batch_count = gr.Number(
-                        label="Batch Count",
-                        value=1,
-                        precision=0,
-                        minimum=1,
-                        info="Number of batches to run",
-                    )
+            with gr.Accordion("Basic Options", open=True):
+                with gr.Row():
+                    with gr.Column():
+                        seed = gr.Number(
+                            label="Seed",
+                            value=None,
+                            precision=0,
+                            info="Random seed for reproducible results",
+                        )
+                        random_seed_chk = gr.Checkbox(
+                            label="Random Seed",
+                            value=False,
+                            info="Use a new seed for each batch",
+                        )
+                        steps = gr.Slider(
+                            1,
+                            50,
+                            value=20,
+                            label="Steps",
+                            info="Number of denoising steps",
+                        )
+                        width = gr.Slider(
+                            64,
+                            1024,
+                            value=256,
+                            step=64,
+                            label="Width",
+                            info="Output image width",
+                        )
+                        height = gr.Slider(
+                            64,
+                            1024,
+                            value=256,
+                            step=64,
+                            label="Height",
+                            info="Output image height",
+                        )
+                    with gr.Column():
+                        images_per_batch = gr.Number(
+                            label="Images per Batch",
+                            value=1,
+                            precision=0,
+                            minimum=1,
+                            info="How many images to generate at once",
+                        )
+                        batch_count = gr.Number(
+                            label="Batch Count",
+                            value=1,
+                            precision=0,
+                            minimum=1,
+                            info="Number of batches to run",
+                        )
+                        nsfw_filter = gr.Checkbox(
+                            label="NSFW Filter",
+                            value=True,
+                            info="Enable safety checker",
+                        )
+                        smooth_preview_chk = gr.Checkbox(
+                            label="Smooth Preview",
+                            value=False,
+                            info="Show real-time preview while generating",
+                        )
+            with gr.Accordion("Advanced Options", open=False):
+                with gr.Row():
+                    with gr.Column():
+                        guidance_scale = gr.Slider(
+                            1,
+                            20,
+                            value=7.5,
+                            step=0.5,
+                            label="Guidance Scale",
+                            info="How closely the image follows the prompt",
+                        )
+                        clip_skip = gr.Slider(
+                            1,
+                            4,
+                            value=1,
+                            step=1,
+                            label="Clip Skip",
+                            info="Skip final CLIP layers",
+                        )
+                        scheduler = gr.Dropdown(
+                            label="Sampler",
+                            choices=["Euler", "Euler a", "DDIM", "DPM++ 2M Karras"],
+                            value="Euler",
+                        )
+                        precision_dd = gr.Dropdown(
+                            label="Precision",
+                            choices=["fp16", "fp32"],
+                            value="fp16",
+                        )
+                        tile_chk = gr.Checkbox(label="Tile Output", value=False)
+                    with gr.Column():
+                        lora_weight = gr.Slider(
+                            0.0,
+                            1.0,
+                            step=0.05,
+                            value=1.0,
+                            label="LoRA Weight",
+                        )
+                        denoising_strength = gr.Slider(
+                            0.0,
+                            1.0,
+                            step=0.05,
+                            value=0.75,
+                            label="Denoising Strength",
+                        )
+                        highres_fix_chk = gr.Checkbox(
+                            label="High Res Fix", value=False
+                        )
 
         with gr.TabItem("Model Manager"):
             with gr.Tabs():
