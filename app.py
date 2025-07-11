@@ -175,7 +175,7 @@ with gr.Blocks(theme=theme, css=css) as demo:
                 with gr.Column(scale=1):
                     preset = gr.Dropdown(
                         choices=list(presets.PRESETS.keys()),
-                        label="Preset",
+                        label="Style",
                         value=None,
                     )
                     auto_enhance_chk = gr.Checkbox(label="Auto Enhance Prompt", value=False)
