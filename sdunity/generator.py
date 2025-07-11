@@ -118,12 +118,22 @@ def generate_image(
         except Exception:
             pass
 
-    preset_text = ""
+    style_prompt = ""
+    style_negative = ""
     if preset:
-        preset_text = presets.PRESETS.get(preset, "")
+        style = presets.PRESETS.get(preset)
+        if isinstance(style, dict):
+            style_prompt = style.get("prompt", "")
+            style_negative = style.get("negative_prompt", "")
+        elif isinstance(style, str):
+            style_prompt = style
 
-    prompt_parts = [enhanced_quality, prompt, enhanced_details, preset_text]
+    prompt_parts = [enhanced_quality, prompt, enhanced_details, style_prompt]
     prompt = ", ".join([p for p in prompt_parts if p])
+    if style_negative:
+        negative_prompt = ", ".join(
+            [p for p in [negative_prompt, style_negative] if p]
+        )
 
     pipe = models.get_pipeline(model, progress=progress, category=model_type)
 

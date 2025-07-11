@@ -79,7 +79,7 @@ Start the interface with:
 The web UI is available on `http://localhost:7860/` by default. Launch options can be adjusted from the Settings tab or by editing `sdunity/config.py`.
 Local overrides reside in `config/user_config.json`; this file is loaded on startup and currently sets `server_port` to `7861`.
 
-Prompt presets live in `presets.txt`. 
+Prompt styles live in the `styles/` directory as JSON files.
 
 ## Maintainer Script
 `maintainer.sh` also handles updates and removal. Run it with `sudo` followed by `install`, `update` or `uninstall`. It manages a virtual environment under `/opt/SDUnity/venv` and requires `git` and `python3`.
