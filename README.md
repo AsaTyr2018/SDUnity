@@ -80,6 +80,9 @@ The web UI is available on `http://localhost:7860/` by default. Launch options c
 Local overrides reside in `config/user_config.json`; this file is loaded on startup and currently sets `server_port` to `7861`.
 
 Prompt styles live in the `styles/` directory as JSON files.
+Model loader presets are stored in the `presets/` directory and
+include default model/LoRA choices along with generation settings
+such as guidance scale and aspect ratio.
 
 ## Maintainer Script
 `maintainer.sh` also handles updates and removal. Run it with `sudo` followed by `install`, `update` or `uninstall`. It manages a virtual environment under `/opt/SDUnity/venv` and requires `git` and `python3`.
