@@ -21,9 +21,10 @@ The UI is split into tabs for generation, model management, a gallery and a sett
 ## Features
 ### Generator
 - Prompt and negative prompt inputs
-- Random or fixed seed support
+- Random or fixed seed support (enabled by default)
 - Control over steps, width, height and guidance scale
-- Clip skip and sampler selection
+- Clip skip and sampler selection with more sampler choices
+- Available samplers: Euler, Euler a, DDIM, DPM++ 2M Karras, DPM++ 2M, PNDM, LMS, Heun, DPM++ SDE Karras
 - Precision toggle and tiling option
 - Multiple images per batch (parallel generation) and batch repetition
 - Smooth step streaming preview (WIP)

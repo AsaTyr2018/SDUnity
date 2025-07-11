@@ -11,6 +11,10 @@ from diffusers import (
     EulerDiscreteScheduler,
     DDIMScheduler,
     DPMSolverMultistepScheduler,
+    PNDMScheduler,
+    LMSDiscreteScheduler,
+    HeunDiscreteScheduler,
+    DPMSolverSDEScheduler,
 )
 
 from . import presets, models, gallery, enhancer, wildcards
@@ -143,6 +147,11 @@ def generate_image(
             "Euler a": EulerAncestralDiscreteScheduler,
             "DDIM": DDIMScheduler,
             "DPM++ 2M Karras": DPMSolverMultistepScheduler,
+            "PNDM": PNDMScheduler,
+            "LMS": LMSDiscreteScheduler,
+            "Heun": HeunDiscreteScheduler,
+            "DPM++ SDE Karras": DPMSolverSDEScheduler,
+            "DPM++ 2M": DPMSolverMultistepScheduler,
         }
         sched_cls = sched_map.get(scheduler)
         if sched_cls:
