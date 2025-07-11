@@ -253,7 +253,7 @@ with gr.Blocks(theme=theme, css=css) as demo:
                         )
                         random_seed_chk = gr.Checkbox(
                             label="Random Seed",
-                            value=False,
+                            value=True,
                             info="Use a new seed for each batch",
                         )
                         steps = gr.Slider(
@@ -325,7 +325,17 @@ with gr.Blocks(theme=theme, css=css) as demo:
                         )
                         scheduler = gr.Dropdown(
                             label="Sampler",
-                            choices=["Euler", "Euler a", "DDIM", "DPM++ 2M Karras"],
+                            choices=[
+                                "Euler",
+                                "Euler a",
+                                "DDIM",
+                                "DPM++ 2M Karras",
+                                "DPM++ 2M",
+                                "PNDM",
+                                "LMS",
+                                "Heun",
+                                "DPM++ SDE Karras",
+                            ],
                             value="Euler",
                         )
                         precision_dd = gr.Dropdown(
