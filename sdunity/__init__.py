@@ -4,6 +4,7 @@ from importlib import import_module
 
 __all__ = [
     "presets",
+    "model_loader",
     "models",
     "gallery",
     "generator",

@@ -6,6 +6,7 @@ from PIL import Image
 
 from sdunity import (
     presets,
+    model_loader,
     models,
     generator,
     gallery,
@@ -193,6 +194,11 @@ with gr.Blocks(theme=theme, css=css) as demo:
                 )
                 lora = gr.Dropdown(
                     choices=models.list_loras(), label="LoRA", multiselect=True
+                )
+                model_preset = gr.Dropdown(
+                    choices=list(model_loader.PRESETS.keys()),
+                    label="Model Preset",
+                    value=None,
                 )
                 refresh = gr.Button("Refresh")
                 load_btn = gr.Button("Load to VRAM", variant="primary")
@@ -813,6 +819,33 @@ with gr.Blocks(theme=theme, css=css) as demo:
                 new_text = tags.apply_suggestion(text, choice)
                 return new_text, gr.update(choices=[], value=None, visible=False)
 
+            def _apply_model_preset(name):
+                data = model_loader.PRESETS.get(name)
+                if not data:
+                    return [gr.update() for _ in range(8)]
+
+                loras = data.get("loras", [])
+                prompt_val = data.get("prompt", "")
+                neg_val = data.get("negative_prompt", "")
+                gscale = data.get("guidance_scale")
+                width = data.get("width")
+                height = data.get("height")
+                model_name = data.get("model")
+                category = models._model_category(model_name) if model_name else None
+                model_choices = models.list_models(category) if category else []
+                if model_name not in model_choices:
+                    model_name = model_choices[0] if model_choices else None
+                return [
+                    prompt_val,
+                    neg_val,
+                    gscale,
+                    width,
+                    height,
+                    category,
+                    gr.update(choices=model_choices, value=model_name),
+                    loras,
+                ]
+
 
         with gr.TabItem("Settings"):
             settings_inputs = []
@@ -1001,6 +1034,20 @@ with gr.Blocks(theme=theme, css=css) as demo:
             smooth_preview_chk,
             images_per_batch,
             batch_count,
+            model_category,
+            model,
+            lora,
+        ],
+    )
+    model_preset.change(
+        _apply_model_preset,
+        inputs=model_preset,
+        outputs=[
+            prompt,
+            negative_prompt,
+            guidance_scale,
+            width,
+            height,
             model_category,
             model,
             lora,
