@@ -850,8 +850,10 @@ with gr.Blocks(theme=theme, css=css) as demo:
             def _apply_model_preset(name):
                 data = model_loader.PRESETS.get(name)
                 if not data:
-                    return [gr.update() for _ in range(8)]
+                    return [gr.update() for _ in range(8)] + [gr.update(value="", visible=False)]
 
+                msg = model_loader.ensure_preset_assets(name)
+                
                 loras = data.get("loras", [])
                 prompt_val = data.get("prompt", "")
                 neg_val = data.get("negative_prompt", "")
@@ -872,6 +874,7 @@ with gr.Blocks(theme=theme, css=css) as demo:
                     category,
                     gr.update(choices=model_choices, value=model_name),
                     loras,
+                    gr.update(value=msg, visible=bool(msg)),
                 ]
 
 
@@ -1079,6 +1082,7 @@ with gr.Blocks(theme=theme, css=css) as demo:
             model_category,
             model,
             lora,
+            load_status,
         ],
     )
     remove_settings_preset_btn.click(
