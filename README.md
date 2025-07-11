@@ -32,6 +32,7 @@ The UI is split into tabs for generation, model management, a gallery and a sett
 - Wildcard prompts using `__name__` tokens that pull lines from files in `wildcards/`
 - Optional GPT‑2 based prompt enhancer that augments your prompt (WIP)
 - NSFW filter toggle
+- Basic and advanced inference settings grouped for easier tweaking
 
 ### Model Manager
 - Browse models under `models/` and LoRAs under `loras/`
