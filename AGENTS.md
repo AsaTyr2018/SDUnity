@@ -16,8 +16,6 @@ Real-time seed control.
 Aspect ratio and steps/sampling settings.
 A "Smooth Step Streaming" mode that displays each step in real time.
 
-__Optional: Image2Image and Inpainting/Outpainting support (future phase).__
-
 ## Model Selector
 Choose from multiple model backends at runtime:
 Supported formats: Stable Diffusion 1.5, SDXL, PonyXL (initially).
